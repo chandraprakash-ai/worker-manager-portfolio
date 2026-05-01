@@ -216,26 +216,39 @@ export const useDataStore = create(
 
       // Lot Production Actions
       addLot: (lotData) => {
+        const defaultProcesses = [
+          { id: 'screening', name: 'Screening', isDone: false, billNumber: '', notes: '', pieces: 0 },
+          { id: 'embroidery', name: 'Embroidery', isDone: false, billNumber: '', notes: '', pieces: 0 },
+          { id: 'cutting', name: 'Cutting', isDone: false, pieces: 0 },
+          { id: 'stitching', name: 'Stitching', isDone: false, pieces: 0 },
+          { id: 'interlock', name: 'Interlock', isDone: false, pieces: 0 },
+          { id: 'diamond', name: 'Diamond', isDone: false, pieces: 0, pricePerPc: 0 },
+          { id: 'button', name: 'Button', isDone: false, numButtons: 0, pieces: 0, pricePerPc: 0 },
+          { id: 'steampress', name: 'Steam Press', isDone: false, pieces: 0 },
+        ];
+
+        const selectedStages = lotData.stages || defaultProcesses.map(p => p.id);
+        const filteredProcesses = defaultProcesses.filter(p => selectedStages.includes(p.id));
+
         const newLot = {
           id: `lot_${Date.now()}`,
           status: 'In Production',
           createdAt: new Date().toISOString(),
           itemImage: lotData.itemImage || null,
           sampleImage: lotData.sampleImage || null,
-          sizes: lotData.sizes || {}, // { M: 10, L: 20 }
-          processes: [
-            { id: 'screening', name: 'Screening', isDone: false, billNumber: '', notes: '', pieces: 0 },
-            { id: 'embroidery', name: 'Embroidery', isDone: false, billNumber: '', notes: '', pieces: 0 },
-            { id: 'cutting', name: 'Cutting', isDone: false, pieces: 0 },
-            { id: 'stitching', name: 'Stitching', isDone: false, pieces: 0 },
-            { id: 'interlock', name: 'Interlock', isDone: false, pieces: 0 },
-            { id: 'diamond', name: 'Diamond', isDone: false, pieces: 0, pricePerPc: 0 },
-            { id: 'button', name: 'Button', isDone: false, numButtons: 0, pieces: 0, pricePerPc: 0 },
-            { id: 'steampress', name: 'Steam Press', isDone: false, pieces: 0 },
-          ],
+          sizes: lotData.sizes || {},
+          brand: lotData.brand || 'KS2U',
+          notes: lotData.notes || '',
+          processes: filteredProcesses,
           ...lotData
         };
         set(state => ({ allLots: [newLot, ...state.allLots] }));
+      },
+
+      updateLot: (lotId, updates) => {
+        set(state => ({
+          allLots: state.allLots.map(lot => lot.id === lotId ? { ...lot, ...updates } : lot)
+        }));
       },
 
       updateLotProcess: (lotId, processId, updates) => {
