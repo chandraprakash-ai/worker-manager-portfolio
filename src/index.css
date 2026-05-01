@@ -48,10 +48,28 @@
   .no-print {
     display: none !important;
   }
-  .print-only {
+  .print-only, .print-block {
     display: block !important;
   }
   body {
     background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  @page {
+    margin: 15mm;
+    size: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    break-inside: auto;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr {
+    break-inside: avoid;
+    break-after: auto;
   }
 }

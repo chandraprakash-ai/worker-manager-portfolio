@@ -10,6 +10,7 @@ import { BottomSheet } from './components/ui/BottomSheet';
 import { haptic } from './utils/haptics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRef } from 'react';
+import { generateInvoicePDF } from './utils/generateInvoice';
 
 function App() {
   const { user, login, logout } = useAuthStore();
@@ -165,7 +166,8 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-light pb-24 font-sans">
+    <>
+      <div className="min-h-screen bg-brand-light pb-24 font-sans no-print">
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-2xl border-b border-surface-100 px-6 py-5 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-brand text-brand-accent rounded-xl flex items-center justify-center font-bold text-xl">A</div>
@@ -285,18 +287,27 @@ function App() {
           <p className="text-surface-300 text-xs font-bold uppercase tracking-widest px-1">Quick-fill diary records</p>
           <div className="space-y-3">
             {bulkRows.map((row, idx) => (
-              <div key={idx} className="flex gap-1.5 items-center bg-brand-light p-2.5 rounded-xl">
-                <input type="date" value={row.date} onChange={(e) => { const newRows = [...bulkRows]; newRows[idx].date = e.target.value; setBulkRows(newRows); }} className="w-[85px] bg-transparent text-[9px] font-bold outline-none border-none" />
-                <input 
-                  type="number" 
-                  placeholder="Pcs" 
-                  ref={idx === bulkRows.length - 1 ? lastRowRef : null}
-                  value={row.pieces} 
-                  onChange={(e) => { const newRows = [...bulkRows]; newRows[idx].pieces = e.target.value; setBulkRows(newRows); }} 
-                  className="flex-1 min-w-0 bg-white rounded-lg p-2.5 text-center text-[11px] font-bold outline-none border-none" 
-                />
-                <input type="number" placeholder="Rate" value={row.rate} onChange={(e) => { const newRows = [...bulkRows]; newRows[idx].rate = e.target.value; setBulkRows(newRows); }} className="w-14 bg-white rounded-lg p-2.5 text-center text-[11px] font-bold outline-none border-none" />
-                <button onClick={() => setBulkRows(bulkRows.filter((_, i) => i !== idx))} className="p-1 text-red-400"><Trash2 size={14} /></button>
+              <div key={idx} className="grid grid-cols-[auto_1fr_1fr_auto] gap-3 items-center bg-white border border-surface-100 p-4 rounded-2xl shadow-sm">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[8px] font-black text-brand/30 uppercase tracking-widest ml-1">Date</span>
+                  <input type="date" value={row.date} onChange={(e) => { const newRows = [...bulkRows]; newRows[idx].date = e.target.value; setBulkRows(newRows); }} className="bg-brand-light rounded-lg px-2 py-2 text-[10px] font-bold outline-none border-none w-[90px]" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[8px] font-black text-brand/30 uppercase tracking-widest ml-1">Pieces</span>
+                  <input 
+                    type="number" 
+                    placeholder="0" 
+                    ref={idx === bulkRows.length - 1 ? lastRowRef : null}
+                    value={row.pieces} 
+                    onChange={(e) => { const newRows = [...bulkRows]; newRows[idx].pieces = e.target.value; setBulkRows(newRows); }} 
+                    className="w-full bg-brand-light rounded-lg p-2 text-center text-xs font-bold outline-none border-none" 
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[8px] font-black text-brand/30 uppercase tracking-widest ml-1">Rate</span>
+                  <input type="number" placeholder="0" value={row.rate} onChange={(e) => { const newRows = [...bulkRows]; newRows[idx].rate = e.target.value; setBulkRows(newRows); }} className="w-full bg-brand-light rounded-lg p-2 text-center text-xs font-bold outline-none border-none" />
+                </div>
+                <button onClick={() => setBulkRows(bulkRows.filter((_, i) => i !== idx))} className="mt-4 p-2 text-red-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
               </div>
             ))}
           </div>
@@ -352,7 +363,7 @@ function App() {
                 </div>
               ))}
             </div>
-            <button onClick={() => window.print()} className="w-full btn-secondary py-5 flex items-center justify-center gap-2 mt-6"><FileText size={18} /> Print Archive Copy</button>
+            <button onClick={() => generateInvoicePDF(selectedWorker, getSettlementTransactions(viewingSettlement.id), viewingSettlement.amountPaid)} className="w-full btn-secondary py-5 flex items-center justify-center gap-2 mt-6"><FileText size={18} /> Download PDF Voucher</button>
           </div>
         )}
       </BottomSheet>
@@ -428,11 +439,12 @@ function App() {
           </div>
           <div className="pt-4 space-y-4">
             <button onClick={() => handleSettle(calculateBalance(transactions))} className="w-full bg-brand text-brand-accent py-6 rounded-[2rem] font-black uppercase tracking-widest shadow-premium active:scale-95 transition-all">Confirm Payment & Close Balance</button>
-            <button onClick={() => window.print()} className="w-full btn-secondary py-5 flex items-center justify-center gap-2 rounded-[2rem] font-bold"><FileText size={18} /> Print Itemized Voucher</button>
+            <button onClick={() => generateInvoicePDF(selectedWorker, activeTransactions, calculateBalance(transactions))} className="w-full btn-secondary py-5 flex items-center justify-center gap-2 rounded-[2rem] font-bold"><FileText size={18} /> Generate Professional PDF</button>
           </div>
         </div>
       </BottomSheet>
-    </div>
+      </div>
+    </>
   );
 }
 
