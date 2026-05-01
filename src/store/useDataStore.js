@@ -131,6 +131,40 @@ export const useDataStore = create(
           transactions: updatedAllTransactions.filter(tx => tx.workerId === workerId),
           isLoading: false
         }));
+      },
+
+      updateTransaction: async (txId, updatedData) => {
+        set({ isLoading: true });
+        set(state => {
+          const updatedAll = state.allTransactions.map(tx => 
+            tx.id === txId ? { 
+              ...tx, 
+              ...updatedData, 
+              amount: updatedData.type === 'work' 
+                ? (parseFloat(updatedData.pieces) * parseFloat(updatedData.rate)) 
+                : parseFloat(updatedData.amount) 
+            } : tx
+          );
+          const currentWorkerId = state.allTransactions.find(tx => tx.id === txId)?.workerId;
+          return {
+            allTransactions: updatedAll,
+            transactions: updatedAll.filter(tx => tx.workerId === currentWorkerId),
+            isLoading: false
+          };
+        });
+      },
+
+      deleteTransaction: async (txId) => {
+        set({ isLoading: true });
+        set(state => {
+          const workerId = state.allTransactions.find(tx => tx.id === txId)?.workerId;
+          const updatedAll = state.allTransactions.filter(tx => tx.id !== txId);
+          return {
+            allTransactions: updatedAll,
+            transactions: updatedAll.filter(tx => tx.workerId === workerId),
+            isLoading: false
+          };
+        });
       }
     }),
     {

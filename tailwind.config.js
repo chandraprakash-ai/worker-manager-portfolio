@@ -8,9 +8,9 @@ export default {
     extend: {
       colors: {
         brand: {
-          light: '#F8F9FA',
-          DEFAULT: '#1A1A1A',
-          dark: '#0A0A0A',
+          light: '#FFFFFF',
+          DEFAULT: '#111111', // Slightly softer black
+          dark: '#000000',
           accent: '#D4AF37', // Gold for Amrut
         },
         surface: {
@@ -31,9 +31,11 @@ export default {
       },
       boxShadow: {
         'premium': '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 10px -2px rgba(0, 0, 0, 0.03)',
-        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.07)',
       }
     },
   },
   plugins: [],
 }
+// Force reload: Theme is White, Black, and Gold. No Blue. 13:58
+
