@@ -1,12 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Search, ChevronRight, Home, Users, Plus } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight, Users, Plus } from 'lucide-react';
 
 export const WorkerDirectory = ({ search, setSearch, workers, onOpenSheet, onNavigate }) => {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-2">
-         <button onClick={() => onNavigate('/')} className="bg-[#111111] text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md active:scale-90 transition-all"><Home size={18} /></button>
+         <button onClick={() => onNavigate('/')} className="text-[#111111]/40 hover:text-[#111111] transition-colors pr-2 active:scale-90"><ArrowLeft size={24} /></button>
          <h2 className="text-3xl text-[#111111] font-display font-black tracking-tight">Workers Directory</h2>
       </div>
       

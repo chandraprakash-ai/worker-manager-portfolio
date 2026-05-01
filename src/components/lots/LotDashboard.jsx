@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Search, Layout, ClipboardList, Plus, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Search, Layout, ClipboardList, Plus, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export const LotDashboard = ({ 
   search, 
@@ -25,8 +25,8 @@ export const LotDashboard = ({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <div className="flex items-center gap-3">
-        <button onClick={() => onNavigate('/')} className="bg-[#111111] text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md active:scale-90 transition-all"><Home size={18} /></button>
+      <div className="flex items-center gap-2">
+        <button onClick={() => onNavigate('/')} className="text-[#111111]/40 hover:text-[#111111] transition-colors pr-2 active:scale-90"><ArrowLeft size={24} /></button>
         <h2 className="text-3xl text-[#111111] font-display font-black tracking-tight">Production Master</h2>
       </div>
 
