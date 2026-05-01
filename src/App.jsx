@@ -5,7 +5,8 @@ import {
   LogOut, Plus, Search, ChevronRight, User, Phone, MapPin, 
   IndianRupee, FileText, CheckCircle2, Trash2, History, 
   Calendar, Layers, ArrowLeft, Edit2, Package, ShoppingCart, 
-  BarChart3, Users, Home, Settings, X
+  BarChart3, Users, Home, Settings, X, Filter, Minus, AlertTriangle,
+  ClipboardList, Camera, Layout
 } from 'lucide-react';
 import { BottomSheet } from './components/ui/BottomSheet';
 import { haptic } from './utils/haptics';
@@ -15,13 +16,25 @@ import { generateInvoicePDF } from './utils/generateInvoice';
 import { 
   Routes, Route, useNavigate, useLocation, useParams, useSearchParams 
 } from 'react-router-dom';
+import { LoginPage } from './components/auth/LoginPage';
+import { Header } from './components/layout/Header';
+import { HomeDashboard } from './components/dashboard/HomeDashboard';
+import { WorkerDirectory } from './components/workers/WorkerDirectory';
+import { WorkerDetail } from './components/workers/WorkerDetail';
+import { LotDashboard } from './components/lots/LotDashboard';
+import { WorkerModals } from './components/modals/WorkerModals';
+import { InventoryModals } from './components/modals/InventoryModals';
+import { InventoryDashboard } from './components/inventory/InventoryDashboard';
+import { LotModals } from './components/modals/LotModals';
 
 function App() {
   const { user, login, logout } = useAuthStore();
   const { 
     workers, transactions, fetchWorkers, addWorker, addTransaction, 
     settleWorker, fetchTransactions, addBulkTransactions, getSettlements, 
-    getSettlementTransactions, updateTransaction, deleteTransaction 
+    getSettlementTransactions, updateTransaction, deleteTransaction,
+    allInventory, allInventoryLogs, addInventoryItem, updateInventoryStock, deleteInventoryItem,
+    allLots, addLot, updateLotProcess, deleteLot
   } = useDataStore();
   
   const [username, setUsername] = useState('');
@@ -38,12 +51,50 @@ function App() {
   
   const isHomePage = location.pathname === '/';
   const isWorkersPage = location.pathname.startsWith('/worker') || location.pathname === '/workers' || location.pathname === '/add-worker';
+  const isInventoryPage = location.pathname.startsWith('/inventory');
+  const isLotPage = location.pathname.startsWith('/lot');
   
   const isHistoryOpen = location.pathname.includes('/history');
   const isBulkEntryOpen = location.pathname.includes('/bulk');
   const isSettlementOpen = location.pathname.includes('/settle');
   const isAddWorkerOpen = location.pathname === '/add-worker';
   const isEditTxOpen = location.pathname.includes('/edit-tx');
+  const isAddInventoryOpen = location.pathname === '/inventory/add';
+  const isUpdateInventoryOpen = location.pathname.includes('/inventory/update/');
+  const isAddLotOpen = location.pathname === '/lot/add';
+  const isLotDetailOpen = location.pathname.startsWith('/lot/') && !location.pathname.includes('/add');
+  
+  const [newItem, setNewItem] = useState({ name: '', category: 'Fabric', quantity: '', unit: 'Meters', minThreshold: '5' });
+  const [activeInvItem, setActiveInvItem] = useState(null);
+  const [updateQty, setUpdateQty] = useState('');
+  const [newLot, setNewLot] = useState({ lotNumber: '', sizes: { M: '', L: '', XL: '', '2XL': '' }, image: '' });
+  const [selectedLot, setSelectedLot] = useState(null);
+
+  const handleAddInventory = (e) => {
+    e.preventDefault();
+    addInventoryItem(newItem);
+    setNewItem({ name: '', category: 'Fabric', quantity: '', unit: 'Meters', minThreshold: '5' });
+    closeSheet();
+    haptic('medium');
+  };
+
+  const handleInventoryUpdate = (e, delta, reason) => {
+    e.preventDefault();
+    updateInventoryStock(activeInvItem.id, delta, reason);
+    setUpdateQty('');
+    closeSheet();
+    haptic('medium');
+  };
+
+  const handleAddLot = (e) => {
+    e.preventDefault();
+    addLot(newLot);
+    setNewLot({ lotNumber: '', sizes: { M: '', L: '', XL: '', '2XL': '' }, image: '' });
+    closeSheet();
+    haptic('heavy');
+  };
+
+
   
   useEffect(() => {
     if (activeWorker) {
@@ -113,7 +164,7 @@ function App() {
     haptic('medium');
   };
 
-  const handleAddTx = (e) => {
+  const handleSubmitTransaction = (e) => {
     e.preventDefault();
     if (newTx.type === 'work' && (Number(newTx.pieces) <= 0 || Number(newTx.rate) <= 0)) {
       alert("Pieces and Rate must be greater than 0.");
@@ -125,14 +176,19 @@ function App() {
     }
 
     const amount = newTx.type === 'work' ? Number(newTx.pieces) * Number(newTx.rate) : Number(newTx.amount);
-    const txData = {
-      ...newTx,
-      id: Date.now().toString(),
-      workerId: activeWorker.id,
-      amount
-    };
     
-    addTransaction(txData);
+    if (editingTx) {
+      updateTransaction(editingTx.id, { ...newTx, amount });
+    } else {
+      addTransaction({
+        ...newTx,
+        id: Date.now().toString(),
+        workerId: activeWorker.id,
+        amount
+      });
+    }
+    
+    setEditingTx(null);
     setNewTx({ type: 'work', pieces: '', rate: '', amount: '', date: new Date().toISOString().split('T')[0] });
     closeSheet();
     haptic('medium');
@@ -194,54 +250,61 @@ function App() {
   const activeTransactions = transactions.filter(tx => tx.status === 'active');
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-[#111111] flex items-center justify-center p-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md bg-white rounded-[2.5rem] p-10 shadow-2xl">
-          <div className="mb-10 text-center">
-            <h1 className="text-4xl font-display font-bold text-[#111111] mb-2 tracking-tight">AMRUT FASHION</h1>
-            <p className="text-surface-300 font-medium tracking-[0.2em] text-[10px] uppercase">Crafting Excellence Since 1998</p>
-          </div>
-          <form onSubmit={handleLogin} className="space-y-6">
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-medium" placeholder="Manager ID" />
-            <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-medium" placeholder="Security PIN" />
-            <button type="submit" className="w-full btn-primary py-5 text-lg shadow-premium">Authorize Session</button>
-          </form>
-        </motion.div>
-      </div>
-    );
+    return <LoginPage username={username} setUsername={setUsername} pin={pin} setPin={setPin} handleLogin={handleLogin} />;
   }
 
   return (
     <>
       <div className="min-h-screen bg-white pb-32 font-sans no-print text-[#111111]">
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-surface-100 px-6 py-4 flex justify-between items-center shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-[#111111] text-[#D4AF37] rounded-xl flex items-center justify-center font-black text-lg border border-[#D4AF37]/20 shadow-sm">A</div>
-          <div>
-            <h1 className="text-sm font-display font-black text-[#111111] tracking-tight">AMRUT FASHION</h1>
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-              <span className="text-[9px] text-[#111111]/40 font-black uppercase tracking-tighter">Live Session</span>
-            </div>
-          </div>
-        </div>
-        <button onClick={logout} className="w-9 h-9 bg-surface-50 rounded-xl text-[#111111]/40 flex items-center justify-center active:scale-90 transition-all border border-surface-100"><LogOut size={16} /></button>
-      </header>
+        <Header onLogout={logout} />
 
-      <main className="px-6 py-8 max-w-lg mx-auto">
-        {isHomePage ? (
-          <div className="space-y-10">
-            {/* Header Greeting */}
-            <div className="flex justify-between items-end">
-              <div>
-                <p className="text-[10px] font-black text-[#111111]/30 uppercase tracking-[0.3em] mb-2">Workspace Dashboard</p>
-                <h2 className="text-4xl font-display font-black text-[#111111] leading-tight">Welcome,<br/>Amrut Fashion</h2>
-              </div>
-              <div className="w-14 h-14 bg-[#F5F5F5] rounded-[1.5rem] flex items-center justify-center text-[#111111]">
-                <Settings size={24} />
-              </div>
-            </div>
+        <main className="px-6 py-8 max-w-lg mx-auto">
+          {isHomePage && <HomeDashboard navigate={navigate} workers={workers} />}
 
+          {isWorkersPage && !activeWorker && (
+            <WorkerDirectory 
+              search={search} 
+              setSearch={setSearch} 
+              workers={filteredWorkers} 
+              onOpenSheet={openSheet} 
+              onNavigate={navigate} 
+            />
+          )}
+
+          {activeWorker && (
+            <WorkerDetail 
+              activeWorker={activeWorker} 
+              transactions={activeTransactions} 
+              calculateBalance={calculateBalance} 
+              onNavigate={navigate} 
+              onOpenSheet={openSheet} 
+              setEditingTx={setEditingTx} 
+              setNewTx={setNewTx} 
+              generateInvoicePDF={generateInvoicePDF} 
+            />
+          )}
+
+          {isInventoryPage && (
+            <InventoryDashboard 
+              search={search} 
+              setSearch={setSearch} 
+              allInventory={allInventory} 
+              onNavigate={navigate} 
+              onOpenSheet={openSheet} 
+              setActiveInvItem={setActiveInvItem} 
+            />
+          )}
+
+          {isLotPage && (
+            <LotDashboard 
+              search={search} 
+              setSearch={setSearch} 
+              allLots={allLots} 
+              onNavigate={navigate} 
+              onOpenSheet={openSheet} 
+              setSelectedLot={setSelectedLot} 
+            />
+          )}
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white p-6 rounded-[2rem] border border-surface-100 shadow-sm">
@@ -272,26 +335,26 @@ function App() {
                   <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center border border-white/5"><ChevronRight size={20} className="text-[#D4AF37]" /></div>
                 </motion.div>
 
-                <div className="bg-white p-8 rounded-[2.5rem] border border-surface-100 shadow-sm flex justify-between items-center opacity-40 grayscale pointer-events-none">
+                <div onClick={() => navigate('/inventory')} className="bg-white p-8 rounded-[2.5rem] border border-surface-100 shadow-sm flex justify-between items-center active:scale-95 transition-all cursor-pointer group hover:border-[#D4AF37]/20">
                   <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-[#F5F5F5] rounded-[1.5rem] flex items-center justify-center text-[#111111]/20"><Package size={32} /></div>
+                    <div className="w-16 h-16 bg-[#111111] text-[#D4AF37] rounded-[1.5rem] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform"><Package size={32} /></div>
                     <div>
                       <h4 className="text-2xl font-display font-bold tracking-tight">Inventory Control</h4>
                       <p className="text-xs text-surface-300 font-medium">Stock & Raw materials</p>
                     </div>
                   </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest bg-surface-100 px-3 py-1.5 rounded-full text-surface-400">Locked</span>
+                  <ChevronRight size={20} className="text-[#111111]/10 group-hover:text-[#D4AF37] transition-colors" />
                 </div>
 
-                <div className="bg-white p-8 rounded-[2.5rem] border border-surface-100 shadow-sm flex justify-between items-center opacity-40 grayscale pointer-events-none">
+                <div onClick={() => navigate('/lots')} className="bg-white p-8 rounded-[2.5rem] border border-surface-100 shadow-sm flex justify-between items-center active:scale-95 transition-all cursor-pointer group hover:border-[#D4AF37]/20">
                   <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-[#F5F5F5] rounded-[1.5rem] flex items-center justify-center text-[#111111]/20"><ShoppingCart size={32} /></div>
+                    <div className="w-16 h-16 bg-[#111111] text-[#D4AF37] rounded-[1.5rem] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform"><ClipboardList size={32} /></div>
                     <div>
-                      <h4 className="text-2xl font-display font-bold tracking-tight">Sales & Orders</h4>
-                      <p className="text-xs text-surface-300 font-medium">B2B Bill management</p>
+                      <h4 className="text-2xl font-display font-bold tracking-tight">Production (Lots)</h4>
+                      <p className="text-xs text-surface-300 font-medium">Job cards & Batch tracking</p>
                     </div>
                   </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest bg-surface-100 px-3 py-1.5 rounded-full text-surface-400">Locked</span>
+                  <ChevronRight size={20} className="text-[#111111]/10 group-hover:text-[#D4AF37] transition-colors" />
                 </div>
 
                 <div className="bg-white p-8 rounded-[2.5rem] border border-surface-100 shadow-sm flex justify-between items-center opacity-40 grayscale pointer-events-none">
@@ -431,196 +494,212 @@ function App() {
         )}
       </>
     )}
+      {isInventoryPage && (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate('/')} className="bg-[#111111] text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md active:scale-90 transition-all"><Home size={18} /></button>
+              <h2 className="text-3xl text-[#111111] font-display font-black tracking-tight">Stock Inventory</h2>
+            </div>
+          </div>
+
+          <div className="relative group">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#111111]/20" size={20} />
+            <input 
+              type="text" 
+              placeholder="Search Fabric, Threads, Buttons..." 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)} 
+              className="w-full bg-white border border-surface-100 rounded-[1.5rem] py-5 pl-14 pr-6 shadow-sm focus:border-[#D4AF37]/30 outline-none transition-all font-medium" 
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 pb-20">
+            {allInventory.filter(i => i.name.toLowerCase().includes(search.toLowerCase()) || i.category.toLowerCase().includes(search.toLowerCase())).map(item => (
+              <motion.div 
+                key={item.id} 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white p-6 rounded-[2rem] border border-surface-100 shadow-sm flex flex-col gap-6"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] bg-[#D4AF37]/10 px-3 py-1 rounded-full mb-3 inline-block">{item.category}</span>
+                    <h3 className="text-xl font-display font-bold text-[#111111]">{item.name}</h3>
+                    <p className="text-[10px] text-surface-300 font-bold uppercase tracking-tighter mt-1">Last restocked: {new Date(item.lastRestocked).toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-3xl font-display font-bold ${item.quantity <= item.minThreshold ? 'text-red-500' : 'text-[#111111]'}`}>{item.quantity}</p>
+                    <p className="text-[10px] font-black text-surface-300 uppercase tracking-widest">{item.unit}</p>
+                  </div>
+                </div>
+
+                {item.quantity <= item.minThreshold && (
+                  <div className="flex items-center gap-2 bg-red-50 p-3 rounded-xl text-red-600">
+                    <AlertTriangle size={14} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Low Stock Alert</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => { setActiveInvItem(item); openSheet(`/inventory/update/${item.id}`); }}
+                    className="bg-[#111111] text-white py-4 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest active:scale-95 transition-all shadow-premium"
+                  >
+                    <Plus size={16} /> Restock
+                  </button>
+                  <button 
+                    onClick={() => { setActiveInvItem(item); openSheet(`/inventory/update/${item.id}`); }}
+                    className="bg-[#F5F5F5] text-[#111111] py-4 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest active:scale-95 transition-all"
+                  >
+                    <Minus size={16} /> Use
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+            {allInventory.length === 0 && (
+              <div className="text-center py-20 opacity-20">
+                <Package size={64} className="mx-auto mb-4" />
+                <p className="text-xs font-black uppercase tracking-[0.3em]">No items in inventory</p>
+              </div>
+            )}
+          </div>
+
+          <button 
+            onClick={() => openSheet('/inventory/add')} 
+            className="fixed bottom-8 right-8 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center active:scale-95 transition-all border-2 border-[#D4AF37]/20"
+          >
+            <Plus size={32} strokeWidth={3} />
+          </button>
+        </div>
+        )}
+      {isLotPage && (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/')} className="bg-[#111111] text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md active:scale-90 transition-all"><Home size={18} /></button>
+            <h2 className="text-3xl text-[#111111] font-display font-black tracking-tight">Production Master</h2>
+          </div>
+
+          <div className="relative group">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#111111]/20" size={20} />
+            <input 
+              type="text" 
+              placeholder="Search Lot Number..." 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)} 
+              className="w-full bg-white border border-surface-100 rounded-[1.5rem] py-5 pl-14 pr-6 shadow-sm focus:border-[#D4AF37]/30 outline-none transition-all font-medium" 
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            {allLots.filter(l => l.lotNumber.includes(search)).map(lot => (
+              <motion.div 
+                key={lot.id} 
+                onClick={() => { setSelectedLot(lot); openSheet(`/lot/${lot.id}`); }}
+                className="bg-white rounded-[2.5rem] border border-surface-100 shadow-sm overflow-hidden active:scale-[0.98] transition-all cursor-pointer group"
+              >
+                <div className="h-40 bg-[#F5F5F5] relative overflow-hidden flex items-center justify-center text-[#111111]/10">
+                  {lot.image ? <img src={lot.image} className="w-full h-full object-cover" /> : <Layout size={48} />}
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-[#111111]">Lot #{lot.lotNumber}</div>
+                  <div className="absolute bottom-4 right-4 bg-[#111111] text-[#D4AF37] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{lot.status}</div>
+                </div>
+                <div className="p-6">
+                   <div className="grid grid-cols-4 gap-2 mb-6">
+                     {Object.entries(lot.sizes).map(([size, qty]) => (
+                       <div key={size} className="bg-[#F5F5F5] p-2 rounded-xl text-center">
+                         <p className="text-[8px] font-black text-[#111111]/30 uppercase mb-0.5">{size}</p>
+                         <p className="text-xs font-bold text-[#111111]">{qty || 0}</p>
+                       </div>
+                     ))}
+                   </div>
+                   <div className="flex justify-between items-center">
+                     <div>
+                        <p className="text-[10px] font-black text-surface-300 uppercase tracking-widest">Total Production</p>
+                        <h4 className="text-xl font-display font-bold text-[#111111]">{Object.values(lot.sizes).reduce((a, b) => Number(a) + Number(b), 0)} Pcs</h4>
+                     </div>
+                     <div className="flex -space-x-2">
+                        {lot.processes.slice(0, 4).map((p, i) => (
+                          <div key={i} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black ${p.status === 'Done' ? 'bg-green-500 text-white' : 'bg-[#111111] text-[#D4AF37]'}`}>{p.name.charAt(0)}</div>
+                        ))}
+                        {lot.processes.length > 4 && <div className="w-8 h-8 rounded-full border-2 border-white bg-surface-100 flex items-center justify-center text-[8px] font-black text-surface-400">+{lot.processes.length - 4}</div>}
+                     </div>
+                   </div>
+                </div>
+              </motion.div>
+            ))}
+            {allLots.length === 0 && (
+              <div className="text-center py-20 opacity-20">
+                <ClipboardList size={64} className="mx-auto mb-4" />
+                <p className="text-xs font-black uppercase tracking-[0.3em]">No production lots active</p>
+              </div>
+            )}
+          </div>
+
+          <button 
+            onClick={() => openSheet('/lot/add')} 
+            className="fixed bottom-8 right-8 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center active:scale-95 transition-all border-2 border-[#D4AF37]/20"
+          >
+            <Plus size={32} strokeWidth={3} />
+          </button>
+        </div>
+      )}
       </main>
 
       {/* MODALS */}
       
-      {/* Bulk Entry Sheet */}
-      <BottomSheet isOpen={isBulkEntryOpen} onClose={closeSheet} title="Bulk Diary Entry">
-        <div className="space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar pb-10">
-          <p className="text-surface-300 text-xs font-bold uppercase tracking-widest px-1">Quick-fill diary records</p>
-          <div className="space-y-3">
-            {bulkRows.map((row, idx) => (
-              <div key={idx} className="flex flex-col sm:grid sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-center bg-white border border-surface-100 p-4 rounded-2xl shadow-sm relative group">
-                <button onClick={() => setBulkRows(bulkRows.filter((_, i) => i !== idx))} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow-lg sm:static sm:bg-transparent sm:text-red-300 sm:hover:text-red-500 sm:shadow-none transition-all"><X size={14} /></button>
-                <div className="flex flex-row sm:flex-col gap-2 sm:gap-1 w-full sm:w-auto items-center sm:items-start">
-                  <span className="text-[8px] font-black text-[#111111]/30 uppercase tracking-widest ml-1 min-w-[35px]">Date</span>
-                  <input type="date" value={row.date} onChange={(e) => { const newRows = [...bulkRows]; newRows[idx].date = e.target.value; setBulkRows(newRows); }} className="bg-[#F5F5F5] rounded-lg px-2 py-2 text-[10px] font-bold outline-none border-none flex-1 sm:w-[90px]" />
-                </div>
-                <div className="flex flex-row sm:flex-col gap-2 sm:gap-1 w-full items-center sm:items-start">
-                  <span className="text-[8px] font-black text-[#111111]/30 uppercase tracking-widest ml-1 min-w-[35px]">Pcs</span>
-                  <input 
-                    type="number" 
-                    placeholder="0" 
-                    value={row.pieces} 
-                    onChange={(e) => {
-                      const newRows = [...bulkRows];
-                      newRows[idx].pieces = e.target.value;
-                      setBulkRows(newRows);
-                    }}
-                    className="w-full bg-[#F5F5F5] rounded-lg p-3 sm:p-2 text-center text-xs font-bold outline-none border-none" 
-                  />
-                </div>
-                <div className="flex flex-row sm:flex-col gap-2 sm:gap-1 w-full items-center sm:items-start">
-                  <span className="text-[8px] font-black text-[#111111]/30 uppercase tracking-widest ml-1 min-w-[35px]">Rate</span>
-                  <input 
-                    type="number" 
-                    placeholder="0.00" 
-                    value={row.rate} 
-                    onChange={(e) => {
-                      const newRows = [...bulkRows];
-                      newRows[idx].rate = e.target.value;
-                      setBulkRows(newRows);
-                    }}
-                    className="w-full bg-[#F5F5F5] rounded-lg p-3 sm:p-2 text-center text-xs font-bold outline-none border-none" 
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          <button onClick={() => setBulkRows([...bulkRows, { date: new Date().toISOString().split('T')[0], pieces: '', rate: '' }])} className="w-full py-4 border-2 border-dashed border-surface-200 rounded-3xl text-surface-300 font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-50 transition-colors"><Plus size={16} /> Add Another Row</button>
-          <div className="pt-4 sticky bottom-0 bg-white">
-            <button onClick={handleBulkSubmit} className="w-full bg-[#111111] text-white py-5 rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all mt-4 border border-[#D4AF37]/20">Save {bulkRows.filter(r => r.pieces && r.rate).length} Entries</button>
-          </div>
-        </div>
-      </BottomSheet>
+      <WorkerModals 
+        isBulkEntryOpen={isBulkEntryOpen} 
+        closeSheet={closeSheet} 
+        bulkRows={bulkRows} 
+        setBulkRows={setBulkRows} 
+        handleBulkSubmit={handleBulkSubmit}
+        isHistoryOpen={isHistoryOpen} 
+        viewingSettlement={viewingSettlement} 
+        setViewingSettlement={setViewingSettlement} 
+        getSettlements={getSettlements} 
+        activeWorker={activeWorker} 
+        getSettlementTransactions={getSettlementTransactions} 
+        generateInvoicePDF={generateInvoicePDF}
+        isAddWorkerOpen={isAddWorkerOpen} 
+        handleAddWorker={handleAddWorker} 
+        newWorker={newWorker} 
+        setNewWorker={setNewWorker}
+        isEditTxOpen={isEditTxOpen} 
+        editingTx={editingTx} 
+        newTx={newTx} 
+        setNewTx={setNewTx} 
+        handleUpdateTransaction={handleSubmitTransaction} 
+        deleteTransaction={handleDeleteTx}
+        isSettlementOpen={isSettlementOpen} 
+        calculateBalance={calculateBalance} 
+        transactions={transactions} 
+        handleSettle={handleSettle} 
+        activeTransactions={activeTransactions}
+      />
 
-      {/* History Sheet */}
-      <BottomSheet isOpen={isHistoryOpen} onClose={() => { closeSheet(); setViewingSettlement(null); }} title={viewingSettlement ? "Settlement Details" : "Payment History"}>
-        {!viewingSettlement ? (
-          <div className="space-y-4 pb-10">
-            {getSettlements(activeWorker?.id).length === 0 && <p className="text-center py-20 text-surface-200 font-bold uppercase tracking-widest text-[10px]">No previous settlements</p>}
-            {getSettlements(activeWorker?.id).map(s => (
-              <div key={s.id} onClick={() => setViewingSettlement(s)} className="bg-white border border-surface-100 p-6 rounded-[2rem] shadow-sm flex justify-between items-center active:scale-95 transition-transform cursor-pointer">
-                <div>
-                  <p className="text-xs font-bold text-[#111111] uppercase tracking-widest mb-1">{new Date(s.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                  <p className="text-[10px] text-surface-300 font-bold uppercase tracking-widest">{s.txIds.length} Transactions Settled</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-display font-bold text-[#111111]">₹{s.amountPaid?.toLocaleString()}</p>
-                  <span className="text-[9px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">Paid Full</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-6 pb-10">
-            <button onClick={() => setViewingSettlement(null)} className="flex items-center gap-2 text-surface-300 text-[10px] font-bold uppercase tracking-widest mb-4"><ArrowLeft size={14} /> Back to History</button>
-            <div className="bg-[#F5F5F5] p-6 rounded-[2rem] flex justify-between items-center">
-              <div>
-                <p className="text-[10px] font-bold text-surface-300 uppercase mb-1">Total Paid</p>
-                <h4 className="text-3xl font-display font-bold text-[#111111]">₹{viewingSettlement.amountPaid?.toLocaleString()}</h4>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-bold text-surface-300 uppercase mb-1">Items</p>
-                <h4 className="text-xl font-display font-bold text-[#111111]">{viewingSettlement.txIds.length}</h4>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {getSettlementTransactions(viewingSettlement.id).map(tx => (
-                <div key={tx.id} className="flex justify-between items-center py-3 border-b border-surface-50 last:border-none">
-                  <div>
-                    <p className="text-xs font-bold text-[#111111] uppercase">{tx.type === 'work' ? 'Piece Work' : 'Advance'}</p>
-                    <p className="text-[10px] text-surface-300 font-medium">{new Date(tx.date).toLocaleDateString()}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-[#111111]">₹{tx.amount?.toLocaleString()}</p>
-                    {tx.type === 'work' && <p className="text-[9px] text-surface-300">{tx.pieces} × {tx.rate}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => generateInvoicePDF(activeWorker, getSettlementTransactions(viewingSettlement.id), viewingSettlement.amountPaid)} className="w-full btn-secondary py-5 flex items-center justify-center gap-2 mt-6"><FileText size={18} /> Download PDF Voucher</button>
-          </div>
-        )}
-      </BottomSheet>
+      <InventoryModals 
+        isAddInventoryOpen={isAddInventoryOpen} 
+        closeSheet={closeSheet} 
+        handleAddInventory={handleAddInventory} 
+        newItem={newItem} 
+        setNewItem={setNewItem}
+        isUpdateInventoryOpen={isUpdateInventoryOpen} 
+        activeInvItem={activeInvItem} 
+        updateQty={updateQty} 
+        setUpdateQty={setUpdateQty} 
+        handleInventoryUpdate={handleInventoryUpdate}
+      />
 
-      {/* Add Worker Modal */}
-      <BottomSheet isOpen={isAddWorkerOpen} onClose={closeSheet} title="Register Professional">
-        <form onSubmit={handleAddWorker} className="space-y-6 pb-10">
-          <div>
-            <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-[0.2em] mb-3 ml-1">Full Name</label>
-            <input type="text" required value={newWorker.name} onChange={(e) => setNewWorker({ ...newWorker, name: e.target.value })} className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold" placeholder="Legal Name" />
-          </div>
-          <div>
-            <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-[0.2em] mb-3 ml-1">Contact Number</label>
-            <input type="tel" required maxLength={10} value={newWorker.phone} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 10) setNewWorker({ ...newWorker, phone: val }); }} className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold" placeholder="10 Digit Number" />
-          </div>
-          <div>
-            <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-[0.2em] mb-3 ml-1">Home Address</label>
-            <textarea value={newWorker.address} onChange={(e) => setNewWorker({ ...newWorker, address: e.target.value })} className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none min-h-[120px] font-bold" placeholder="Detailed Address" />
-          </div>
-          <button type="submit" className="w-full btn-primary py-5 shadow-premium">Initialize Profile</button>
-        </form>
-      </BottomSheet>
-
-      {/* Add/Edit Single Transaction Modal */}
-      <BottomSheet isOpen={isEditTxOpen || location.pathname.includes('/add-tx')} onClose={closeSheet} title={editingTx ? (editingTx.type === 'work' ? "Edit Work Log" : "Edit Advance") : "New Record"}>
-        {!editingTx && (
-          <div className="flex bg-[#F5F5F5] p-1.5 rounded-2xl mb-8">
-            <button onClick={() => setNewTx({ ...newTx, type: 'work' })} className={`flex-1 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${newTx.type === 'work' ? 'bg-white text-[#111111] shadow-sm' : 'text-[#111111]/30'}`}>Work Entry</button>
-            <button onClick={() => setNewTx({ ...newTx, type: 'advance' })} className={`flex-1 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${newTx.type === 'advance' ? 'bg-white text-[#111111] shadow-sm' : 'text-[#111111]/30'}`}>Advance</button>
-          </div>
-        )}
-        <form onSubmit={handleAddTx} className="space-y-6 pb-10">
-          {newTx.type === 'work' ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-widest mb-3">Quantity</label>
-                <input type="number" required value={newTx.pieces} onChange={(e) => setNewTx({ ...newTx, pieces: e.target.value })} className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-center" placeholder="0" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-widest mb-3">Rate (₹)</label>
-                <input type="number" required value={newTx.rate} onChange={(e) => setNewTx({ ...newTx, rate: e.target.value })} className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-center" placeholder="0.00" />
-              </div>
-            </div>
-          ) : (
-            <div>
-              <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-widest mb-3">Amount (₹)</label>
-              <input type="number" required value={newTx.amount} onChange={(e) => setNewTx({ ...newTx, amount: e.target.value })} className="w-full bg-[#F5F5F5] border-none rounded-3xl p-6 outline-none text-3xl font-display font-bold text-center" placeholder="0.00" />
-            </div>
-          )}
-          <div>
-            <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-widest mb-3">Transaction Date</label>
-            <input type="date" value={newTx.date} onChange={(e) => setNewTx({ ...newTx, date: e.target.value })} className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold" />
-          </div>
-          <div className="flex gap-3">
-            {editingTx && (
-              <button type="button" onClick={() => { handleDeleteTx(editingTx.id); closeSheet(); }} className="p-5 bg-red-50 text-red-600 rounded-2xl active:scale-95 transition-all">
-                <Trash2 size={24} />
-              </button>
-            )}
-            <button type="submit" className="flex-1 btn-primary py-5 shadow-premium uppercase tracking-widest font-black">
-              {editingTx ? 'Update Entry' : 'Commit Record'}
-            </button>
-          </div>
-        </form>
-      </BottomSheet>
-
-      {/* Settlement Sheet */}
-      <BottomSheet isOpen={isSettlementOpen} onClose={closeSheet} title="Final Pay Balance">
-        <div className="space-y-8 pb-10">
-          <div className="bg-[#111111] text-[#D4AF37] rounded-[2.5rem] p-10 text-center shadow-premium relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-             <p className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 opacity-60">Total Amount Payable</p>
-             <h3 className="text-6xl font-display font-bold tracking-tighter">₹{calculateBalance(transactions).toLocaleString()}</h3>
-          </div>
-          <div className="space-y-4 px-2">
-            <div className="flex justify-between items-center py-4 border-b border-surface-100">
-              <span className="text-[11px] font-bold text-surface-300 uppercase tracking-widest">Gross Earnings</span>
-              <span className="text-lg font-display font-bold text-green-600">₹{transactions.filter(tx => tx.type === 'work' && tx.status === 'active').reduce((sum, tx) => sum + (tx.amount || 0), 0).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center py-4 border-b border-surface-100">
-              <span className="text-[11px] font-bold text-surface-300 uppercase tracking-widest">Deductions (Advances)</span>
-              <span className="text-lg font-display font-bold text-red-600">₹{transactions.filter(tx => tx.type === 'advance' && tx.status === 'active').reduce((sum, tx) => sum + (tx.amount || 0), 0).toLocaleString()}</span>
-            </div>
-          </div>
-          <div className="pt-4 space-y-4">
-            <button onClick={() => handleSettle(calculateBalance(transactions))} className="w-full bg-[#111111] text-[#D4AF37] py-6 rounded-[2rem] font-black uppercase tracking-widest shadow-premium active:scale-95 transition-all">Confirm Payment & Close Balance</button>
-            <button onClick={() => generateInvoicePDF(activeWorker, activeTransactions, calculateBalance(transactions))} className="w-full btn-secondary py-5 flex items-center justify-center gap-2 rounded-[2rem] font-bold"><FileText size={18} /> Generate Professional PDF</button>
-          </div>
-        </div>
-      </BottomSheet>
+      <LotModals 
+        isAddLotOpen={isAddLotOpen} 
+        closeSheet={closeSheet} 
+        handleAddLot={handleAddLot} 
+        newLot={newLot} 
+        setNewLot={setNewLot}
+        isLotDetailOpen={isLotDetailOpen} 
+        selectedLot={selectedLot} 
+        onUpdateProcess={updateLotProcess}
+      />
       </div>
     </>
   );
