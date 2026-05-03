@@ -51,6 +51,18 @@ export const useDataStore = create(
         return newWorker.id;
       },
 
+      updateWorker: async (workerId, workerData) => {
+        set({ isLoading: true });
+        set(state => {
+          const updatedWorkers = state.allWorkers.map(w => w.id === workerId ? { ...w, ...workerData } : w);
+          return {
+            allWorkers: updatedWorkers,
+            workers: updatedWorkers,
+            isLoading: false
+          };
+        });
+      },
+
       fetchTransactions: async (workerId, settlementId = null) => {
         let filtered = get().allTransactions.filter(tx => tx.workerId === workerId);
         if (settlementId) {

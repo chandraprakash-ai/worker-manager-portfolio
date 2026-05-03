@@ -17,14 +17,14 @@ export const HomeDashboard = ({ navigate }) => {
       </div>
 
       {/* Main Categories */}
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <motion.div 
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/workers')}
           className="bg-white p-8 rounded-[2.5rem] border border-surface-100 shadow-sm flex justify-between items-center active:scale-95 transition-all cursor-pointer group hover:border-[#D4AF37]/20"
         >
           <div className="flex items-center gap-6 relative z-10">
-            <div className="w-16 h-16 bg-[#111111] text-[#D4AF37] rounded-[1.5rem] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform"><Users size={32} /></div>
+            <div className="w-16 h-16 bg-[#111111] text-[#D4AF37] rounded-[1.5rem] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0"><Users size={32} /></div>
             <div>
               <h4 className="text-2xl font-display font-bold tracking-tight text-[#111111]">Workers</h4>
               <p className="text-xs text-surface-300 font-medium uppercase tracking-widest mt-1">Personnel & Ledger</p>
@@ -35,7 +35,7 @@ export const HomeDashboard = ({ navigate }) => {
 
         <div onClick={() => navigate('/lots')} className="bg-white p-8 rounded-[2.5rem] border border-surface-100 shadow-sm flex justify-between items-center active:scale-95 transition-all cursor-pointer group hover:border-[#D4AF37]/20">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-[#111111] text-[#D4AF37] rounded-[1.5rem] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform"><ClipboardList size={32} /></div>
+            <div className="w-16 h-16 bg-[#111111] text-[#D4AF37] rounded-[1.5rem] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0"><ClipboardList size={32} /></div>
             <div>
               <h4 className="text-2xl font-display font-bold tracking-tight text-[#111111]">Production (Lots)</h4>
               <p className="text-xs text-surface-300 font-medium uppercase tracking-widest mt-1">Job cards & Batch tracking</p>
@@ -46,7 +46,7 @@ export const HomeDashboard = ({ navigate }) => {
 
         <div className="bg-white p-8 rounded-[2.5rem] border border-surface-100 shadow-sm flex justify-between items-center opacity-40 grayscale pointer-events-none">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-[#F5F5F5] rounded-[1.5rem] flex items-center justify-center text-[#111111]/20"><BarChart3 size={32} /></div>
+            <div className="w-16 h-16 bg-[#F5F5F5] rounded-[1.5rem] flex items-center justify-center text-[#111111]/20 flex-shrink-0"><BarChart3 size={32} /></div>
             <div>
               <h4 className="text-2xl font-display font-bold tracking-tight text-[#111111]">Analytics AI</h4>
               <p className="text-xs text-surface-300 font-medium uppercase tracking-widest mt-1">Profit & Growth insights</p>

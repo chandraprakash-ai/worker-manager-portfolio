@@ -1,39 +1,83 @@
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export const BottomSheet = ({ isOpen, onClose, title, children }) => {
+export const BottomSheet = ({ isOpen, onClose, title, children, fullScreen, showHandle = true, onBack, headerExtra }) => {
+  // Lock body scroll when open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
-          />
+          {/* Backdrop - Only for non-fullscreen */}
+          {!fullScreen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+            />
+          )}
           
-          {/* Sheet */}
+          {/* Sheet/Page */}
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 z-[70] bg-white rounded-t-[2.5rem] shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            initial={fullScreen ? { opacity: 1, x: '100%' } : { y: '100%', opacity: 0 }}
+            animate={fullScreen ? { x: 0 } : { y: 0, opacity: 1 }}
+            exit={fullScreen ? { x: '100%' } : { y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+            className={`fixed z-[100] bg-white flex flex-col
+              ${fullScreen 
+                ? 'inset-0 h-full w-full' 
+                : 'inset-x-0 bottom-0 md:inset-0 md:m-auto h-fit max-h-[92vh] md:max-h-[85vh] rounded-t-[2.5rem] md:rounded-[3rem] w-full md:w-[90vw] md:max-w-[700px] shadow-2xl overflow-hidden'
+              }`}
           >
-            {/* Handle */}
-            <div className="w-full flex justify-center py-4">
-              <div className="w-12 h-1.5 bg-surface-200 rounded-full" />
-            </div>
-            
-            {title && (
-              <div className="px-6 pb-4">
-                <h2 className="text-2xl font-display font-bold text-brand">{title}</h2>
+            {/* Desktop Close Button - Only for non-fullscreen */}
+            {!fullScreen && (
+              <button 
+                onClick={onClose}
+                className="hidden md:flex absolute top-6 right-6 w-10 h-10 items-center justify-center rounded-full bg-surface-50 text-surface-400 hover:bg-[#111111] hover:text-[#D4AF37] transition-all z-[80]"
+              >
+                <svg size={20} fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            )}
+
+            {/* Handle - Mobile Only, non-fullscreen */}
+            {showHandle && !fullScreen && (
+              <div className="w-full flex justify-center py-4 md:hidden">
+                <div className="w-12 h-1.5 bg-surface-200 rounded-full" />
               </div>
             )}
             
-            <div className="px-6 pb-10 overflow-y-auto no-scrollbar">
+            {title && (
+              <div className={`flex items-center justify-between gap-4 border-b border-surface-50 transition-all duration-300 ${fullScreen ? 'bg-white sticky top-0 z-[110] px-6 py-8 md:px-16 lg:px-32' : 'px-6 pt-10 pb-6 md:px-12'}`}>
+                <div className="flex items-center gap-6">
+                  {onBack && (
+                    <button onClick={onBack} className="group p-2 -ml-2 text-[#111111] hover:bg-[#F5F5F5] rounded-full transition-all active:scale-90">
+                      <svg size={28} fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-7 h-7 group-hover:-translate-x-1 transition-transform"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                  )}
+                  <div className="flex flex-col">
+                    <h2 className="text-2xl md:text-4xl font-display font-black text-[#111111] tracking-tighter uppercase leading-none">{title}</h2>
+                    {fullScreen && <div className="h-1 w-12 bg-[#D4AF37] mt-2 rounded-full" />}
+                  </div>
+                </div>
+                {headerExtra && (
+                  <div className="flex-shrink-0 animate-in fade-in slide-in-from-right-4 duration-500">
+                    {headerExtra}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className={`flex-1 overflow-y-auto no-scrollbar ${fullScreen ? 'px-6 md:px-16 lg:px-32 py-10' : 'px-6 pb-12 md:px-12 md:pb-20'}`}>
               {children}
             </div>
           </motion.div>

@@ -30,7 +30,7 @@ import { LotModals } from './components/modals/LotModals';
 function App() {
   const { user, login, logout } = useAuthStore();
   const { 
-    workers, transactions, fetchWorkers, addWorker, addTransaction, 
+    workers, transactions, fetchWorkers, addWorker, updateWorker, addTransaction, 
     settleWorker, fetchTransactions, addBulkTransactions, getSettlements, 
     getSettlementTransactions, updateTransaction, deleteTransaction,
     allInventory, allInventoryLogs, addInventoryItem, updateInventoryStock, deleteInventoryItem,
@@ -60,10 +60,11 @@ function App() {
   const isBulkEntryOpen = location.pathname.includes('/bulk');
   const isSettlementOpen = location.pathname.includes('/settle');
   const isAddWorkerOpen = location.pathname === '/add-worker';
-  const isEditTxOpen = location.pathname.includes('/edit-tx');
+  const isEditWorkerOpen = location.pathname.includes('/edit-worker');
+  const isEditTxOpen = location.pathname.includes('/edit-tx') || location.pathname.includes('/add-tx');
   const isAddInventoryOpen = location.pathname === '/inventory/add';
   const isUpdateInventoryOpen = location.pathname.includes('/inventory/update/');
-  const isAddLotOpen = location.pathname === '/lot/add';
+  const isAddLotOpen = location.pathname.includes('/lot/add');
   const isLotDetailOpen = location.pathname.startsWith('/lot/') && !location.pathname.includes('/add');
   
   const [newItem, setNewItem] = useState({ name: '', category: 'Fabric', quantity: '', unit: 'Meters', minThreshold: '5' });
@@ -112,7 +113,7 @@ function App() {
       sampleImage: null,
       stages: defaultStages
     });
-    closeSheet();
+    navigate('/lot', { replace: true });
     haptic('heavy');
   };
 
@@ -177,6 +178,22 @@ function App() {
     haptic('medium');
   };
 
+  const handleUpdateWorker = (e) => {
+    e.preventDefault();
+    if (!newWorker.name.trim()) {
+      alert("Worker name cannot be empty.");
+      return;
+    }
+    if (newWorker.phone && !/^\d{10}$/.test(newWorker.phone)) {
+      alert("Please enter a valid 10-digit phone number.");
+      return;
+    }
+    updateWorker(activeWorker.id, newWorker);
+    setNewWorker({ name: '', phone: '', address: '' });
+    closeSheet();
+    haptic('medium');
+  };
+
   const handleSubmitTransaction = (e) => {
     e.preventDefault();
     if (newTx.type === 'work' && (Number(newTx.pieces) <= 0 || Number(newTx.rate) <= 0)) {
@@ -216,9 +233,16 @@ function App() {
   };
 
   const handleBulkSubmit = async () => {
+    // Check for partially filled rows
+    const incompleteRows = bulkRows.filter(r => (r.pieces || r.rate) && (!r.pieces || !r.rate || Number(r.pieces) <= 0 || Number(r.rate) <= 0));
+    if (incompleteRows.length > 0) {
+      alert("Some entries are incomplete. Please enter both Pieces and Rate for all rows, or remove the incomplete rows.");
+      return;
+    }
+
     const validRows = bulkRows.filter(r => Number(r.pieces) > 0 && Number(r.rate) > 0);
     if (validRows.length === 0) {
-      alert("Please enter at least one valid row with Pieces and Rate > 0.");
+      alert("Please enter at least one valid row with Pieces and Rate.");
       return;
     }
     
@@ -268,10 +292,10 @@ function App() {
 
   return (
     <>
-      <div className="min-h-screen bg-white pb-32 font-sans no-print text-[#111111]">
-        <Header onLogout={logout} />
+      <div className="min-h-screen bg-[#FAFAFA] pb-32 font-sans no-print text-[#111111]">
+        {isHomePage && <Header onLogout={logout} />}
 
-        <main className="px-6 py-8 max-w-lg mx-auto">
+        <main className="px-6 py-8 max-w-7xl mx-auto">
           {isHomePage && <HomeDashboard navigate={navigate} workers={workers} />}
 
           {isWorkersPage && !activeWorker && (
@@ -293,6 +317,7 @@ function App() {
               onOpenSheet={openSheet} 
               setEditingTx={setEditingTx} 
               setNewTx={setNewTx} 
+              setNewWorker={setNewWorker}
               generateInvoicePDF={generateInvoicePDF} 
             />
           )}
@@ -335,7 +360,9 @@ function App() {
         getSettlementTransactions={getSettlementTransactions} 
         generateInvoicePDF={generateInvoicePDF}
         isAddWorkerOpen={isAddWorkerOpen} 
+        isEditWorkerOpen={isEditWorkerOpen}
         handleAddWorker={handleAddWorker} 
+        handleUpdateWorker={handleUpdateWorker}
         newWorker={newWorker} 
         setNewWorker={setNewWorker}
         isEditTxOpen={isEditTxOpen} 
@@ -374,6 +401,7 @@ function App() {
         selectedLot={selectedLot} 
         onUpdateProcess={updateLotProcess}
         onUpdateLot={updateLot}
+        onDeleteLot={deleteLot}
       />
       </div>
     </>

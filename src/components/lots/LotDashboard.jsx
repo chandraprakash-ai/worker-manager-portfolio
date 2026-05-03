@@ -24,102 +24,156 @@ export const LotDashboard = ({
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <div className="flex items-center gap-2">
-        <button onClick={() => onNavigate('/')} className="text-[#111111]/40 hover:text-[#111111] transition-colors pr-2 active:scale-90"><ArrowLeft size={24} /></button>
-        <h2 className="text-3xl text-[#111111] font-display font-black tracking-tight">Production Master</h2>
-      </div>
+    <div className="space-y-6 lg:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 max-w-[1600px] mx-auto px-1 md:px-0">
+      {/* Responsive Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <button onClick={() => onNavigate('/')} className="w-10 h-10 rounded-full border border-[#111111]/10 flex items-center justify-center hover:bg-white transition-all active:scale-90"><ArrowLeft size={20} /></button>
+          <h2 className="text-3xl md:text-5xl lg:text-6xl text-[#111111] font-display font-black tracking-tight leading-none">Lot Production</h2>
+        </div>
 
-      <div className="relative group">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#111111]/20" size={20} />
-        <input 
-          type="text" 
-          placeholder="Search Lot Number..." 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)} 
-          className="w-full bg-white border border-surface-100 rounded-[1.5rem] py-5 pl-14 pr-6 shadow-sm focus:border-[#D4AF37]/30 outline-none transition-all font-medium" 
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4">
-        {allLots.filter(l => l.lotNumber.toLowerCase().includes(search.toLowerCase())).map(lot => (
-          <motion.div 
-            key={lot.id} 
-            onClick={() => onOpenSheet(`/lot/${lot.id}`)}
-            className="bg-white rounded-3xl border border-surface-100 shadow-sm overflow-hidden active:scale-[0.98] transition-all cursor-pointer group hover:shadow-lg transition-all duration-300"
-          >
-            <div className="flex h-32">
-              {/* Left: Compact Image Section */}
-              <div className="w-32 bg-[#111111] relative overflow-hidden flex items-center justify-center text-white/5 flex-shrink-0">
-                {lot.itemImage ? (
-                  <img src={lot.itemImage} className="w-full h-full object-cover opacity-80" />
-                ) : (
-                  <Layout size={32} className="opacity-20" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#111111]/40" />
-              </div>
-
-              {/* Right: Essential Info */}
-              <div className="flex-1 p-4 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37]">{lot.brand || 'KS4U'}</span>
-                        <span className="text-[10px] font-bold text-[#111111]">Lot #{lot.lotNumber}</span>
-                      </div>
-                      <p className="text-[8px] font-black text-[#111111]/30 uppercase tracking-tighter">
-                        {lot.createdAt ? new Date(lot.createdAt).toLocaleDateString() : ''}
-                      </p>
-                    </div>
-                    {hasLoss(lot) && (
-                      <div className="bg-red-50 p-1.5 rounded-lg text-red-500 animate-pulse">
-                        <AlertCircle size={14} />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-1.5 overflow-x-auto no-scrollbar mt-3">
-                    {Object.entries(lot.sizes).map(([size, qty]) => (
-                      <div key={size} className="flex-shrink-0 bg-surface-50 border border-surface-100 px-2 py-1 rounded-lg text-center min-w-[35px]">
-                        <p className="text-[7px] font-black text-[#111111]/30 uppercase">{size}</p>
-                        <p className="text-[10px] font-bold text-[#111111]">{qty}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-2">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-[#111111]/40">Production Progress</p>
-                    <p className="text-[9px] font-black text-[#111111]">{Math.round(getProgress(lot))}%</p>
-                  </div>
-                  <div className="h-1 w-full bg-surface-100 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${getProgress(lot)}%` }}
-                      className="h-full bg-[#111111] rounded-full shadow-sm"
-                    />
-                  </div>
-                  <div className="flex -space-x-2.5 mt-2">
-                     {lot.processes.map((p, i) => (
-                       <div key={i} className={`w-9 h-9 rounded-full border-[3px] border-white flex items-center justify-center text-[9px] font-black transition-all ${p.isDone ? 'bg-[#D4AF37] text-[#111111] shadow-lg scale-110 z-10' : 'bg-surface-100 text-surface-300'}`}>
-                         {p.isDone ? <CheckCircle2 size={14} /> : p.name.charAt(0)}
-                       </div>
-                     ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-        {allLots.length === 0 && (
-          <div className="text-center py-24 opacity-20">
-            <ClipboardList size={72} strokeWidth={1} className="mx-auto mb-6" />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em]">No production activity recorded</p>
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          <div className="relative group flex-1 sm:min-w-[300px]">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#111111]/20" size={20} />
+            <input 
+              type="text" 
+              placeholder="Filter by Lot #, Brand..." 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)} 
+              className="w-full bg-white border border-[#111111]/5 rounded-2xl py-5 pl-14 pr-6 shadow-sm focus:border-[#D4AF37]/30 outline-none transition-all font-medium text-sm" 
+            />
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Summary Metrics - Desktop Only */}
+      <div className="hidden lg:grid grid-cols-4 gap-0 rounded-[2.5rem] overflow-hidden border border-[#111111]/5 shadow-premium bg-white">
+        {[
+          { label: 'Active Lots', value: allLots.length, icon: <Layout size={16} /> },
+          { label: 'In Progress', value: allLots.filter(l => getProgress(l) < 100).length, color: 'text-blue-600' },
+          { label: 'Total Output', value: allLots.reduce((acc, lot) => acc + Object.values(lot.sizes).reduce((s, q) => s + Number(q), 0), 0), unit: 'Pcs' },
+          { label: 'Alerts', value: allLots.filter(hasLoss).length, color: 'text-red-500', icon: <AlertCircle size={16} /> }
+        ].map((stat, i) => (
+          <div key={i} className={`p-8 ${i < 3 ? 'border-r border-[#111111]/5' : ''}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[8px] font-black uppercase tracking-widest text-[#111111]/40">{stat.label}</span>
+              {stat.icon && <span className={stat.color}>{stat.icon}</span>}
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className={`text-3xl font-display font-black tracking-tighter ${stat.color || 'text-[#111111]'}`}>{stat.value}</span>
+              {stat.unit && <span className="text-[10px] font-bold text-[#111111]/30 uppercase">{stat.unit}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+        {allLots.filter(l => l.lotNumber.toLowerCase().includes(search.toLowerCase())).map(lot => (
+          <React.Fragment key={lot.id}>
+            {/* Mobile View: Preferred Horizontal Card */}
+            <motion.div 
+              onClick={() => onOpenSheet(`/lot/${lot.id}`)}
+              className="lg:hidden bg-white rounded-3xl border border-[#111111]/5 shadow-sm overflow-hidden active:scale-[0.98] transition-all cursor-pointer group"
+            >
+              <div className="flex h-32">
+                <div className="w-32 bg-[#111111] relative overflow-hidden flex-shrink-0">
+                  {lot.itemImage ? (
+                    <img src={lot.itemImage} className="w-full h-full object-cover opacity-80" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center opacity-10"><Layout size={32} /></div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#111111]/40" />
+                </div>
+                <div className="flex-1 p-4 flex flex-col justify-between overflow-hidden">
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="overflow-hidden">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] truncate">{lot.brand || 'AMRUT'}</p>
+                        <h3 className="text-sm font-bold text-[#111111] truncate">Lot #{lot.lotNumber}</h3>
+                      </div>
+                      {hasLoss(lot) && <AlertCircle size={14} className="text-red-500" />}
+                    </div>
+                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                      {Object.entries(lot.sizes).map(([size, qty]) => (
+                        <div key={size} className="flex-shrink-0 bg-[#F5F5F5] px-2 py-1 rounded-lg min-w-[32px] text-center">
+                          <p className="text-[7px] font-black text-[#111111]/30 uppercase">{size}</p>
+                          <p className="text-[10px] font-bold text-[#111111]">{qty}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="h-1 w-full bg-[#F5F5F5] rounded-full overflow-hidden">
+                      <div className="h-full bg-[#111111] rounded-full" style={{ width: `${getProgress(lot)}%` }} />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex -space-x-2">
+                        {lot.processes.slice(0, 5).map((p, i) => (
+                          <div key={i} className={`w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-black ${p.isDone ? 'bg-[#D4AF37] text-[#111111] z-10' : 'bg-[#F5F5F5] text-[#111111]/20'}`}>
+                            {p.isDone ? <CheckCircle2 size={10} /> : p.name.charAt(0)}
+                          </div>
+                        ))}
+                      </div>
+                      <span className="text-[8px] font-black text-[#111111]/40 uppercase">{Math.round(getProgress(lot))}% DONE</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Desktop View: Dashboard Grid Card */}
+            <motion.div 
+              onClick={() => onOpenSheet(`/lot/${lot.id}`)}
+              className="hidden lg:flex group relative bg-white rounded-[2.5rem] border border-[#111111]/5 shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer flex-col h-full overflow-hidden"
+            >
+              <div className="aspect-[4/3] relative bg-[#111111]">
+                {lot.itemImage ? (
+                  <img src={lot.itemImage} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center"><Layout size={64} className="text-white/5" /></div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#111111]/90 via-[#111111]/20 to-transparent" />
+                <div className="absolute top-6 left-6">
+                  <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-[8px] font-black uppercase tracking-widest text-white">
+                    {lot.status || 'Active'}
+                  </span>
+                </div>
+                <div className="absolute bottom-6 left-6 right-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-1">{lot.brand || 'AMRUT'}</p>
+                  <h3 className="text-2xl font-display font-black text-white tracking-tight leading-none">Lot #{lot.lotNumber}</h3>
+                </div>
+              </div>
+              <div className="p-8 flex flex-col flex-1 justify-between gap-6">
+                <div className="grid grid-cols-4 gap-2">
+                  {Object.entries(lot.sizes).slice(0, 4).map(([size, qty]) => (
+                    <div key={size} className="bg-[#F5F5F5] p-2.5 rounded-2xl text-center">
+                      <p className="text-[7px] font-black text-[#111111]/40 uppercase mb-0.5">{size}</p>
+                      <p className="text-xs font-black text-[#111111]">{qty}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <p className="text-xl font-display font-black text-[#111111]">{Math.round(getProgress(lot))}% <span className="text-[10px] uppercase font-black tracking-widest text-[#111111]/30 ml-2">Progress</span></p>
+                    {hasLoss(lot) && <div className="text-red-500 bg-red-50 px-3 py-1.5 rounded-full text-[8px] font-black uppercase border border-red-100 flex items-center gap-1.5"><AlertCircle size={12} /> Anomaly</div>}
+                  </div>
+                  <div className="h-1.5 w-full bg-[#F5F5F5] rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${getProgress(lot)}%` }} className="h-full bg-[#111111] rounded-full" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </React.Fragment>
+        ))}
+      </div>
+
+      {allLots.length === 0 && (
+        <div className="text-center py-40 border-2 border-dashed border-[#111111]/5 rounded-[3rem]">
+          <ClipboardList size={80} strokeWidth={0.5} className="mx-auto mb-6 text-[#111111]/10" />
+          <p className="text-[11px] font-black uppercase tracking-[0.5em] text-[#111111]/20">Awaiting Production Input</p>
+        </div>
+      )}
 
       <button 
         onClick={() => onOpenSheet('/lot/add')} 
