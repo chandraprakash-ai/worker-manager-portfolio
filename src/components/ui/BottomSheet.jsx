@@ -57,16 +57,15 @@ export const BottomSheet = ({ isOpen, onClose, title, children, fullScreen, show
             )}
             
             {title && (
-              <div className={`flex items-center justify-between gap-4 border-b border-surface-50 transition-all duration-300 ${fullScreen ? 'bg-white sticky top-0 z-[110] px-6 py-8 md:px-16 lg:px-32' : 'px-6 pt-10 pb-6 md:px-12'}`}>
-                <div className="flex items-center gap-6">
+              <div className={`flex items-center justify-between gap-4 transition-all duration-300 ${fullScreen ? 'bg-white sticky top-0 z-[110] px-6 py-6 md:px-16 lg:px-32' : 'px-6 pt-8 pb-4 md:px-12'}`}>
+                <div className="flex items-center gap-4">
                   {onBack && (
-                    <button onClick={onBack} className="group p-2 -ml-2 text-[#111111] hover:bg-[#F5F5F5] rounded-full transition-all active:scale-90">
-                      <svg size={28} fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-7 h-7 group-hover:-translate-x-1 transition-transform"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
+                    <button onClick={onBack} className="text-[#111111]/40 hover:text-[#111111] transition-all active:scale-90">
+                      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
                     </button>
                   )}
                   <div className="flex flex-col">
-                    <h2 className="text-2xl md:text-4xl font-display font-black text-[#111111] tracking-tighter uppercase leading-none">{title}</h2>
-                    {fullScreen && <div className="h-1 w-12 bg-[#D4AF37] mt-2 rounded-full" />}
+                    <h2 className="text-xl md:text-3xl font-display font-black text-[#111111] tracking-tight leading-none">{title}</h2>
                   </div>
                 </div>
                 {headerExtra && (

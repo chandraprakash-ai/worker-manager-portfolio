@@ -65,7 +65,8 @@ function App() {
   const isAddInventoryOpen = location.pathname === '/inventory/add';
   const isUpdateInventoryOpen = location.pathname.includes('/inventory/update/');
   const isAddLotOpen = location.pathname.includes('/lot/add');
-  const isLotDetailOpen = location.pathname.startsWith('/lot/') && !location.pathname.includes('/add');
+  const isLotDetailOpen = location.pathname.startsWith('/lot/') && !location.pathname.endsWith('/add');
+  const isExtendSizesOpen = location.pathname.endsWith('/add-sizes');
   
   const [newItem, setNewItem] = useState({ name: '', category: 'Fabric', quantity: '', unit: 'Meters', minThreshold: '5' });
   const [activeInvItem, setActiveInvItem] = useState(null);
@@ -398,10 +399,13 @@ function App() {
         newLot={newLot} 
         setNewLot={setNewLot}
         isLotDetailOpen={isLotDetailOpen} 
+        isExtendSizesOpen={isExtendSizesOpen}
         selectedLot={selectedLot} 
         onUpdateProcess={updateLotProcess}
         onUpdateLot={updateLot}
         onDeleteLot={deleteLot}
+        onOpenSheet={openSheet}
+        onNavigate={navigate}
       />
       </div>
     </>

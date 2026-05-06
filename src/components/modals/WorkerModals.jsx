@@ -41,35 +41,39 @@ export const WorkerModals = ({
         }
       >
         <div className="space-y-8 py-10">
-          <div className="space-y-4">
+          <div className="space-y-3">
             {bulkRows.map((row, idx) => (
-              <div key={idx} className="bg-white border border-[#111111]/5 p-3 rounded-[1.5rem] shadow-premium relative group animate-in zoom-in-95 duration-300">
-                <div className="absolute top-2 left-4 text-[10px] font-black text-[#111111]/10">#{idx + 1}</div>
+              <div key={idx} className="group bg-white border border-[#111111]/5 p-4 pt-8 rounded-[1.5rem] shadow-sm hover:shadow-premium transition-all duration-300 relative animate-in zoom-in-95 duration-300">
+                <span className="absolute top-3 left-5 text-[10px] font-black text-[#111111]/20 uppercase tracking-widest">#{idx + 1}</span>
+                
                 {bulkRows.length > 1 && (
                   <button 
                     onClick={() => setBulkRows(bulkRows.filter((_, i) => i !== idx))} 
-                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 z-20"
+                    className="absolute top-3 right-3 w-7 h-7 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all active:scale-90 z-10"
                   >
-                    <X size={10} />
+                    <X size={12} />
                   </button>
                 )}
 
-                <div className="grid grid-cols-[125px_1fr_1fr] gap-2 items-end">
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Work Date</label>
+                <div className="grid grid-cols-3 gap-3 md:gap-4">
+                  {/* Date Input */}
+                  <div className="space-y-1">
+                    <label className="block text-[8px] md:text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Work Date</label>
                     <input 
                       type="date" 
                       value={row.date} 
                       onChange={(e) => { const newRows = [...bulkRows]; newRows[idx].date = e.target.value; setBulkRows(newRows); }} 
-                      className="w-full bg-[#F5F5F5] rounded-xl pl-2 pr-6 py-3 text-[11px] font-black outline-none border-none focus:bg-[#111111] focus:text-white transition-all" 
+                      className="w-full bg-[#F5F5F5] rounded-xl py-3 px-2 md:p-4 text-[10px] md:text-xs font-black outline-none border-none focus:bg-[#111111] focus:text-white transition-all" 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Quantity (Pcs)</label>
+
+                  {/* Pieces Input */}
+                  <div className="space-y-1">
+                    <label className="block text-[8px] md:text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Pcs Done</label>
                     <input 
                       id={`bulk-pcs-${idx}`}
                       type="number" 
-                      placeholder="0" 
+                      placeholder="Qty" 
                       value={row.pieces} 
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -83,40 +87,40 @@ export const WorkerModals = ({
                         newRows[idx].pieces = e.target.value;
                         setBulkRows(newRows);
                       }}
-                      className="w-full bg-[#F5F5F5] rounded-xl p-3 text-center text-xs font-black outline-none border-none focus:bg-[#111111] focus:text-[#D4AF37] transition-all" 
+                      className="w-full bg-[#F5F5F5] rounded-xl py-3 px-2 md:p-4 text-center text-[10px] md:text-xs font-black outline-none border-none focus:bg-[#111111] focus:text-[#D4AF37] transition-all" 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Rate (₹)</label>
-                    <input 
-                      id={`bulk-rate-${idx}`}
-                      type="number" 
-                      placeholder="0.00" 
-                      value={row.rate} 
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (!row.rate || row.rate <= 0) {
-                            setLocalError("Complete current entry first");
-                            return;
+
+                  {/* Rate Input */}
+                  <div className="space-y-1">
+                    <label className="block text-[8px] md:text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Rate</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        id={`bulk-rate-${idx}`}
+                        type="number" 
+                        placeholder="0" 
+                        value={row.rate} 
+                        onChange={(e) => {
+                          const newRows = [...bulkRows];
+                          newRows[idx].rate = e.target.value;
+                          setBulkRows(newRows);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!row.rate || row.rate <= 0) {
+                              setLocalError("Complete current entry first");
+                              return;
+                            }
+                            setLocalError('');
+                            if (idx === bulkRows.length - 1) {
+                              setBulkRows([...bulkRows, { date: new Date().toISOString().split('T')[0], pieces: '', rate: '' }]);
+                            }
                           }
-                          setLocalError('');
-                          if (idx === bulkRows.length - 1) {
-                            setBulkRows([...bulkRows, { date: new Date().toISOString().split('T')[0], pieces: '', rate: '' }]);
-                            setTimeout(() => document.getElementById(`bulk-pcs-${idx + 1}`)?.focus(), 10);
-                          } else {
-                            document.getElementById(`bulk-pcs-${idx + 1}`)?.focus();
-                          }
-                        }
-                      }}
-                      onChange={(e) => {
-                        setLocalError('');
-                        const newRows = [...bulkRows];
-                        newRows[idx].rate = e.target.value;
-                        setBulkRows(newRows);
-                      }}
-                      className="w-full bg-[#F5F5F5] rounded-xl p-3 text-center text-xs font-black outline-none border-none focus:bg-[#111111] focus:text-[#D4AF37] transition-all" 
-                    />
+                        }}
+                        className="w-full bg-[#F5F5F5] rounded-xl py-3 px-2 md:p-4 text-center text-[10px] md:text-xs font-black outline-none border-none focus:bg-[#111111] focus:text-[#D4AF37] transition-all" 
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -143,7 +147,7 @@ export const WorkerModals = ({
                 document.getElementById(field)?.focus();
               }
             }} 
-            className="w-full py-6 border-2 border-dashed border-[#111111]/10 rounded-[2.5rem] text-[#111111]/30 font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-[#111111]/5 hover:text-[#111111] transition-all"
+            className="w-full py-4 md:py-6 border-2 border-dashed border-[#111111]/10 rounded-[2rem] md:rounded-[2.5rem] text-[#111111]/30 font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-[#111111]/5 hover:text-[#111111] transition-all"
           >
             <Plus size={16} /> 
             {bulkRows.length === 0 ? 'Start Entering Work' : 'Add Another Entry'}
@@ -157,7 +161,7 @@ export const WorkerModals = ({
             )}
             <button 
               onClick={localSubmit} 
-              className="w-full bg-[#111111] text-[#D4AF37] py-6 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-premium active:scale-95 transition-all border border-[#D4AF37]/20"
+              className="w-full bg-green-600 text-white py-4 md:py-6 rounded-[1.5rem] md:rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-premium active:scale-95 transition-all border border-green-700/20 hover:bg-green-700"
             >
               Save All {bulkRows.filter(r => r.pieces && r.rate).length} Entries
             </button>
@@ -249,7 +253,7 @@ export const WorkerModals = ({
             <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-[0.2em] mb-3 ml-1">Residential Address</label>
             <textarea value={newWorker.address} onChange={(e) => setNewWorker({ ...newWorker, address: e.target.value })} className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold min-h-[120px]" placeholder="Street, City, Pincode" />
           </div>
-          <button type="submit" className="w-full bg-[#111111] text-[#D4AF37] py-6 rounded-2xl font-black uppercase tracking-widest shadow-premium active:scale-95 transition-all">Update Profile</button>
+          <button type="submit" className="w-full bg-green-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-premium active:scale-95 transition-all hover:bg-green-700">Update Profile</button>
         </form>
       </BottomSheet>
 
@@ -309,7 +313,7 @@ export const WorkerModals = ({
             {editingTx && (
               <button type="button" onClick={() => { if(confirm('Delete this entry?')) { deleteTransaction(editingTx.id); closeSheet(); } }} className="w-full text-red-500 font-bold text-xs uppercase tracking-widest py-2">Remove Record</button>
             )}
-            <button type="submit" className="w-full bg-[#111111] text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-premium active:scale-95 transition-all">
+            <button type="submit" className="w-full bg-green-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-premium active:scale-95 transition-all hover:bg-green-700">
               {editingTx ? 'Update Entry' : 'Commit Record'}
             </button>
           </div>
@@ -341,7 +345,7 @@ export const WorkerModals = ({
           <div className="space-y-4 pt-4 px-2">
             <button 
               onClick={() => handleSettle(calculateBalance(transactions))} 
-              className="w-full bg-[#111111] text-[#D4AF37] py-6 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-premium active:scale-95 transition-all border border-[#D4AF37]/30 hover:border-[#D4AF37] flex items-center justify-center gap-3"
+              className="w-full bg-green-600 text-white py-6 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-premium active:scale-95 transition-all border border-green-700/30 hover:bg-green-700 flex items-center justify-center gap-3"
             >
               <CheckCircle2 size={20} />
               Confirm & Close Ledger

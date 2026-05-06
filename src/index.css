@@ -18,7 +18,7 @@
 
 @layer components {
   .btn-primary {
-    @apply relative overflow-hidden bg-brand text-white px-6 py-3 rounded-2xl font-medium transition-all active:scale-95 hover:bg-brand/90 disabled:opacity-50;
+    @apply relative overflow-hidden bg-green-600 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 hover:bg-green-700 disabled:opacity-50;
   }
 
   .btn-secondary {

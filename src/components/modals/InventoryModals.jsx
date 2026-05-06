@@ -74,7 +74,7 @@ export const InventoryModals = ({
           <div className="grid grid-cols-2 gap-4 pt-4">
              <button 
                onClick={() => handleInventoryUpdate('add')}
-               className="bg-[#111111] text-[#D4AF37] py-5 rounded-[2rem] font-black uppercase tracking-widest shadow-premium flex items-center justify-center gap-2 active:scale-95 transition-all"
+               className="bg-green-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-widest shadow-premium flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-green-700"
              >
                <Plus size={20} strokeWidth={3} /> Restock
              </button>

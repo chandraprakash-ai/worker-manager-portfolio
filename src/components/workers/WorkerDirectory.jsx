@@ -5,9 +5,9 @@ import { ArrowLeft, Search, ChevronRight, Users, Plus } from 'lucide-react';
 export const WorkerDirectory = ({ search, setSearch, workers, onOpenSheet, onNavigate }) => {
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-2">
-         <button onClick={() => onNavigate('/')} className="text-[#111111]/40 hover:text-[#111111] transition-colors pr-2 active:scale-90"><ArrowLeft size={24} /></button>
-         <h2 className="text-3xl text-[#111111] font-display font-black tracking-tight">Workers Directory</h2>
+      <div className="flex items-center gap-4">
+         <button onClick={() => onNavigate('/')} className="text-[#111111]/40 hover:text-[#111111] transition-colors active:scale-90"><ArrowLeft size={24} /></button>
+         <h2 className="text-xl md:text-3xl text-[#111111] font-display font-black tracking-tight">Workers Directory</h2>
       </div>
       
       <div className="relative group">

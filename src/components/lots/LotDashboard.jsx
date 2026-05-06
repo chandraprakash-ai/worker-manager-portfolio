@@ -28,8 +28,8 @@ export const LotDashboard = ({
       {/* Responsive Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="flex items-center gap-4">
-          <button onClick={() => onNavigate('/')} className="w-10 h-10 rounded-full border border-[#111111]/10 flex items-center justify-center hover:bg-white transition-all active:scale-90"><ArrowLeft size={20} /></button>
-          <h2 className="text-3xl md:text-5xl lg:text-6xl text-[#111111] font-display font-black tracking-tight leading-none">Lot Production</h2>
+          <button onClick={() => onNavigate('/')} className="text-[#111111]/40 hover:text-[#111111] transition-colors active:scale-90"><ArrowLeft size={24} /></button>
+          <h2 className="text-xl md:text-3xl text-[#111111] font-display font-black tracking-tight leading-none">Lot Production</h2>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
@@ -40,7 +40,7 @@ export const LotDashboard = ({
               placeholder="Filter by Lot #, Brand..." 
               value={search} 
               onChange={(e) => setSearch(e.target.value)} 
-              className="w-full bg-white border border-[#111111]/5 rounded-2xl py-5 pl-14 pr-6 shadow-sm focus:border-[#D4AF37]/30 outline-none transition-all font-medium text-sm" 
+              className="w-full bg-white border border-[#111111]/5 rounded-2xl py-4 pl-14 pr-6 shadow-sm focus:border-[#D4AF37]/30 outline-none transition-all font-medium text-sm" 
             />
           </div>
         </div>
@@ -76,8 +76,8 @@ export const LotDashboard = ({
               onClick={() => onOpenSheet(`/lot/${lot.id}`)}
               className="lg:hidden bg-white rounded-3xl border border-[#111111]/5 shadow-sm overflow-hidden active:scale-[0.98] transition-all cursor-pointer group"
             >
-              <div className="flex h-32">
-                <div className="w-32 bg-[#111111] relative overflow-hidden flex-shrink-0">
+              <div className="flex h-36">
+                <div className="w-28 bg-[#111111] relative overflow-hidden flex-shrink-0">
                   {lot.itemImage ? (
                     <img src={lot.itemImage} className="w-full h-full object-cover opacity-80" />
                   ) : (
@@ -85,7 +85,7 @@ export const LotDashboard = ({
                   )}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#111111]/40" />
                 </div>
-                <div className="flex-1 p-4 flex flex-col justify-between overflow-hidden">
+                <div className="flex-1 p-5 flex flex-col justify-between min-w-0">
                   <div>
                     <div className="flex justify-between items-start mb-2">
                       <div className="overflow-hidden">
@@ -107,7 +107,7 @@ export const LotDashboard = ({
                     <div className="h-1 w-full bg-[#F5F5F5] rounded-full overflow-hidden">
                       <div className="h-full bg-[#111111] rounded-full" style={{ width: `${getProgress(lot)}%` }} />
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center gap-2 min-w-0">
                       <div className="flex -space-x-2">
                         {lot.processes.slice(0, 5).map((p, i) => (
                           <div key={i} className={`w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-black ${p.isDone ? 'bg-[#D4AF37] text-[#111111] z-10' : 'bg-[#F5F5F5] text-[#111111]/20'}`}>
@@ -115,7 +115,7 @@ export const LotDashboard = ({
                           </div>
                         ))}
                       </div>
-                      <span className="text-[8px] font-black text-[#111111]/40 uppercase">{Math.round(getProgress(lot))}% DONE</span>
+                      <span className="text-[8px] font-black text-[#111111]/40 uppercase flex-shrink-0">{Math.round(getProgress(lot))}% DONE</span>
                     </div>
                   </div>
                 </div>

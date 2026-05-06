@@ -1,17 +1,25 @@
-import React, { useState, useRef } from 'react';
-import { Plus, Check, ClipboardList, Camera, Image, Tag, IndianRupee, X, AlertCircle, Trash2, FileText } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Check, ClipboardList, Camera, Image, Tag, IndianRupee, X, AlertCircle, Trash2, FileText, Pencil } from 'lucide-react';
 import { BottomSheet } from '../ui/BottomSheet';
 
 export const LotModals = ({ 
   isAddLotOpen, closeSheet, handleAddLot, newLot, setNewLot, 
-  isLotDetailOpen, selectedLot, onUpdateProcess, onUpdateLot, onDeleteLot 
+  isLotDetailOpen, isExtendSizesOpen, selectedLot, onUpdateProcess, onUpdateLot, onDeleteLot, onOpenSheet, onNavigate 
 }) => {
-  const [previewImage, setPreviewImage] = useState(null);
-  const [isExtendSizesOpen, setIsExtendSizesOpen] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
   const allAvailableSizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
   const activeSizes = Object.keys(newLot.sizes);
   const [localError, setLocalError] = useState('');
   const [extendSizes, setExtendSizes] = useState({});
+  const [collapsedStages, setCollapsedStages] = useState({});
+  const matrixRef = useRef(null);
+
+  useEffect(() => {
+    if (!isExtendSizesOpen) {
+      setExtendSizes({});
+    }
+  }, [isExtendSizesOpen]);
   const designInputRef = useRef(null);
   const sampleInputRef = useRef(null);
 
@@ -24,6 +32,8 @@ export const LotModals = ({
     }
     setNewLot({ ...newLot, sizes: updatedSizes });
   };
+
+  const totalLotPcs = selectedLot ? Object.values(selectedLot.sizes).reduce((acc, val) => acc + (Number(val) || 0), 0) : 0;
 
   const validateAndSubmit = (e) => {
     e.preventDefault();
@@ -47,7 +57,12 @@ export const LotModals = ({
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setNewLot({ ...newLot, [type]: reader.result });
+        const result = reader.result;
+        if (selectedLot) {
+          onUpdateLot(selectedLot.id, { [type]: result });
+        } else {
+          setNewLot({ ...newLot, [type]: result });
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -270,63 +285,55 @@ export const LotModals = ({
                   </div>
 
                   <div className="grid grid-cols-2 xl:grid-cols-1 gap-4">
-                    <div className="bg-white border border-[#111111]/5 rounded-[2rem] p-4 flex flex-col items-center justify-center gap-2 shadow-premium group relative overflow-hidden aspect-square xl:aspect-auto xl:h-[calc(50%-8px)]">
-                        <div 
-                          onClick={() => selectedLot.itemImage ? setPreviewImage(selectedLot.itemImage) : designInputRef.current?.click()}
-                          className="w-full h-full md:w-16 md:h-16 bg-[#F5F5F5] rounded-2xl overflow-hidden flex items-center justify-center cursor-pointer group-hover:scale-105 transition-all"
-                        >
-                           {selectedLot.itemImage ? (
-                             <img src={selectedLot.itemImage} className="w-full h-full object-cover" />
-                           ) : (
-                             <Camera size={20} className="text-[#111111]/20" />
-                           )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <p className="text-[8px] font-black uppercase tracking-widest text-[#111111]/30">Design</p>
-                           {selectedLot.itemImage && (
-                             <button 
-                               onClick={(e) => { e.stopPropagation(); designInputRef.current?.click(); }}
-                               className="p-1 hover:bg-[#F5F5F5] rounded-md transition-colors"
-                             >
-                               <Plus size={10} className="text-[#D4AF37]" />
-                             </button>
-                           )}
-                        </div>
+                    <div 
+                      onClick={() => selectedLot.itemImage ? setPreviewData({ url: selectedLot.itemImage, type: 'itemImage' }) : designInputRef.current?.click()}
+                      className="bg-white border border-[#111111]/5 rounded-[2rem] flex flex-col items-center justify-center shadow-premium group relative overflow-hidden aspect-square xl:aspect-auto xl:h-[calc(50%-8px)] cursor-pointer transition-all hover:border-[#D4AF37]/30"
+                    >
+                        <input type="file" ref={designInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'itemImage')} />
+                        {selectedLot.itemImage ? (
+                          <>
+                            <img src={selectedLot.itemImage} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                            <div className="absolute top-2 right-2 w-8 h-8 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all">
+                              <Plus size={14} className="text-[#D4AF37]" onClick={(e) => { e.stopPropagation(); designInputRef.current?.click(); }} />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                             <Camera size={24} className="text-[#111111]/10 group-hover:text-[#D4AF37] transition-colors" />
+                             <p className="text-[8px] font-black uppercase tracking-widest text-[#111111]/20">Design</p>
+                          </div>
+                        )}
                     </div>
                     
-                    <div className="bg-white border border-[#111111]/5 rounded-[2rem] p-4 flex flex-col items-center justify-center gap-2 shadow-premium group relative overflow-hidden aspect-square xl:aspect-auto xl:h-[calc(50%-8px)]">
-                        <div 
-                          onClick={() => selectedLot.sampleImage ? setPreviewImage(selectedLot.sampleImage) : sampleInputRef.current?.click()}
-                          className="w-full h-full md:w-16 md:h-16 bg-[#F5F5F5] rounded-2xl overflow-hidden flex items-center justify-center cursor-pointer group-hover:scale-105 transition-all"
-                        >
-                           {selectedLot.sampleImage ? (
-                             <img src={selectedLot.sampleImage} className="w-full h-full object-cover" />
-                           ) : (
-                             <Image size={20} className="text-[#111111]/20" />
-                           )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <p className="text-[8px] font-black uppercase tracking-widest text-[#111111]/30">Sample</p>
-                           {selectedLot.sampleImage && (
-                             <button 
-                               onClick={(e) => { e.stopPropagation(); sampleInputRef.current?.click(); }}
-                               className="p-1 hover:bg-[#F5F5F5] rounded-md transition-colors"
-                             >
-                               <Plus size={10} className="text-[#D4AF37]" />
-                             </button>
-                           )}
-                        </div>
+                    <div 
+                      onClick={() => selectedLot.sampleImage ? setPreviewData({ url: selectedLot.sampleImage, type: 'sampleImage' }) : sampleInputRef.current?.click()}
+                      className="bg-white border border-[#111111]/5 rounded-[2rem] flex flex-col items-center justify-center shadow-premium group relative overflow-hidden aspect-square xl:aspect-auto xl:h-[calc(50%-8px)] cursor-pointer transition-all hover:border-[#D4AF37]/30"
+                    >
+                        <input type="file" ref={sampleInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'sampleImage')} />
+                        {selectedLot.sampleImage ? (
+                          <>
+                            <img src={selectedLot.sampleImage} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                            <div className="absolute top-2 right-2 w-8 h-8 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all">
+                              <Plus size={14} className="text-[#D4AF37]" onClick={(e) => { e.stopPropagation(); sampleInputRef.current?.click(); }} />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                             <Image size={24} className="text-[#111111]/10 group-hover:text-[#D4AF37] transition-colors" />
+                             <p className="text-[8px] font-black uppercase tracking-widest text-[#111111]/20">Sample</p>
+                          </div>
+                        )}
                     </div>
                   </div>
               </div>
 
               {/* Compact Size Management Section */}
-              <div className="space-y-6">
+              <div className="space-y-6" ref={matrixRef}>
                 <div className="flex justify-between items-center px-1">
                   <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#111111]/30">Quantity Matrix</h4>
                 </div>
                 
-                <div className="grid grid-cols-3 md:flex md:flex-wrap gap-3">
+                <div className="grid grid-cols-4 gap-2 md:gap-3">
                   {Object.entries(selectedLot.sizes).map(([size, qty]) => (
                     <div key={size} className="bg-white border border-[#111111]/5 p-3 rounded-2xl shadow-sm flex flex-col items-center justify-center relative group transition-all hover:border-[#D4AF37]/30 min-h-[100px]">
                       <button 
@@ -342,9 +349,9 @@ export const LotModals = ({
                         <X size={10} />
                       </button>
                       
-                      <div className="text-center space-y-2 mt-2">
-                        <span className="text-[10px] font-black text-[#111111]/20 uppercase tracking-widest">{size}</span>
-                        <div className="relative">
+                      <div className="text-center space-y-0.5 w-full">
+                        <span className="text-[11px] font-black text-[#111111]/40 uppercase tracking-widest block">{size}</span>
+                        <div className="relative -mt-1">
                           <input 
                             type="number" 
                             value={qty}
@@ -352,10 +359,10 @@ export const LotModals = ({
                               const newSizes = { ...selectedLot.sizes, [size]: e.target.value };
                               onUpdateLot(selectedLot.id, { sizes: newSizes });
                             }}
-                            className="w-full bg-transparent text-center text-lg font-display font-black text-[#111111] outline-none border-none p-0"
+                            className="w-full bg-transparent text-center text-xl font-display font-black text-[#111111] outline-none border-none p-0"
                             placeholder="0"
                           />
-                          <div className="h-0.5 w-4 bg-[#D4AF37]/20 mx-auto mt-0.5" />
+                          <div className="h-0.5 w-4 bg-[#D4AF37]/40 mx-auto" />
                         </div>
                       </div>
                     </div>
@@ -364,7 +371,7 @@ export const LotModals = ({
                   {/* Single Premium Add Button */}
                   {allAvailableSizes.filter(s => !selectedLot.sizes[s]).length > 0 && (
                     <button 
-                      onClick={() => setIsExtendSizesOpen(true)}
+                      onClick={() => onOpenSheet(`/lot/${selectedLot.id}/add-sizes`)}
                       className="bg-[#F5F5F5] border-2 border-dashed border-[#111111]/5 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#D4AF37]/30 group transition-all min-h-[100px]"
                     >
                        <div className="w-8 h-8 rounded-full border border-[#111111]/5 flex items-center justify-center group-hover:bg-[#111111] transition-all">
@@ -389,98 +396,164 @@ export const LotModals = ({
                   {selectedLot.processes.map((proc, idx) => (
                     <div 
                       key={proc.id} 
-                      className={`p-6 rounded-[2.5rem] border transition-all duration-500 ${proc.isDone ? 'bg-green-50/50 border-green-200 shadow-sm' : 'bg-white border-[#111111]/5 shadow-premium'}`}
+                      onClick={() => ['screening', 'embroidery', 'diamond', 'button'].includes(proc.id) && setCollapsedStages(prev => ({ ...prev, [proc.id]: !prev[proc.id] }))}
+                      className={`p-6 pb-8 rounded-[2.5rem] border transition-all duration-500 relative group/card ${['screening', 'embroidery', 'diamond', 'button'].includes(proc.id) ? 'cursor-pointer' : ''} ${proc.isDone ? 'bg-green-50/50 border-green-200 shadow-sm' : 'bg-white border-[#111111]/5 shadow-premium'}`}
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-5">
                           <button 
-                            onClick={() => onUpdateProcess(selectedLot.id, proc.id, { isDone: !proc.isDone })}
-                            className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center transition-all ${proc.isDone ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-[#111111]/10 text-[#111111]/10 hover:border-[#111111]'}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUpdateProcess(selectedLot.id, proc.id, { isDone: !proc.isDone });
+                            }}
+                            className={`w-12 h-12 flex-shrink-0 rounded-2xl border-2 flex items-center justify-center transition-all ${proc.isDone ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'bg-white border-[#111111]/10 text-[#111111]/10 hover:border-[#111111]'}`}
                           >
                             {proc.isDone && <Check size={24} strokeWidth={4} />}
                           </button>
-                          <div>
-                            <h3 className="text-lg font-display font-black text-[#111111] leading-none">{proc.name}</h3>
+                          <div className="flex flex-col">
+                            <h3 className={`text-lg font-display font-black text-[#111111] leading-none transition-colors ${['screening', 'embroidery', 'diamond', 'button'].includes(proc.id) ? 'group-hover/card:text-[#D4AF37]' : ''}`}>
+                              {proc.name}
+                            </h3>
                             <p className={`text-[9px] font-black uppercase tracking-[0.2em] mt-1.5 ${proc.isDone ? 'text-green-700' : 'text-[#111111]/30'}`}>
                               {proc.isDone ? 'Validated' : 'Awaiting Input'}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 bg-[#F5F5F5] p-1.5 rounded-2xl">
-                           <span className="text-[9px] font-black text-[#111111]/30 uppercase ml-2">Pcs</span>
-                           <input 
-                              type="number" 
-                              value={proc.pieces || ''} 
-                              onChange={(e) => onUpdateProcess(selectedLot.id, proc.id, { pieces: e.target.value })}
-                              className="w-20 h-10 bg-white border-none rounded-xl text-center text-lg font-black outline-none transition-all focus:bg-[#111111] focus:text-[#D4AF37]"
-                              placeholder="0"
-                           />
-                        </div>
+                        {/* Deficit & Over-limit Logic */}
+                        {(() => {
+                          const prevPcs = idx > 0 ? Number(selectedLot.processes[idx-1].pieces || 0) : totalLotPcs;
+                          const currPcs = Number(proc.pieces || 0);
+                          const isDeficit = currPcs > 0 && currPcs < prevPcs;
+                          const isOverLimit = currPcs > totalLotPcs;
+                          
+                          return (
+                            <div className="flex flex-col items-end gap-2">
+                              <div 
+                                className={`flex items-center gap-1.5 p-1 rounded-2xl cursor-text transition-all ${isOverLimit ? 'bg-orange-50 border border-orange-200' : isDeficit ? 'bg-red-50 border border-red-200' : 'bg-[#F5F5F5] border border-transparent'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.currentTarget.querySelector('input')?.focus();
+                                }}
+                              >
+                                 <span className={`text-[11px] font-black uppercase ml-3 ${isOverLimit ? 'text-orange-500' : isDeficit ? 'text-red-500' : 'text-[#111111]/40'}`}>Pcs</span>
+                                 <input 
+                                    type="number" 
+                                    value={proc.pieces || ''} 
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      onUpdateProcess(selectedLot.id, proc.id, { pieces: val || '' });
+                                    }}
+                                    className={`w-16 h-10 bg-transparent border-none rounded-xl text-center text-lg font-black outline-none transition-all ${isOverLimit ? 'text-orange-600' : isDeficit ? 'text-red-600' : 'text-[#111111]'}`}
+                                    placeholder="0"
+                                 />
+                              </div>
+                              {isOverLimit ? (
+                                <div className="flex items-center gap-2 whitespace-nowrap px-2">
+                                  <span className="text-[7px] font-black uppercase tracking-widest text-orange-600">
+                                    Over Total ({totalLotPcs})
+                                  </span>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      matrixRef.current?.scrollIntoView({ behavior: 'smooth' });
+                                    }}
+                                    className="text-[7px] font-black uppercase tracking-widest text-[#D4AF37] underline"
+                                  >
+                                    Edit
+                                  </button>
+                                </div>
+                              ) : isDeficit && (
+                                <span className="text-[7px] font-black uppercase tracking-widest text-red-500 px-2 animate-pulse whitespace-nowrap">
+                                  Deficit from last stage
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Expanded UI for specific stages */}
-                      {(proc.id === 'screening' || proc.id === 'embroidery') && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-[#111111]/5">
-                           <div className="space-y-2">
-                              <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Reference ID</label>
-                              <input 
-                                type="text" 
-                                value={proc.billNumber || ''} 
-                                onChange={(e) => onUpdateProcess(selectedLot.id, proc.id, { billNumber: e.target.value })}
-                                className="w-full h-12 bg-white border border-[#111111]/5 rounded-xl px-4 text-[11px] font-bold outline-none focus:border-[#111111] transition-all"
-                                placeholder="Ref / Bill #"
-                              />
-                           </div>
-                           <div className="space-y-2">
-                              <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Observations</label>
-                              <input 
-                                type="text"
-                                value={proc.notes || ''} 
-                                onChange={(e) => onUpdateProcess(selectedLot.id, proc.id, { notes: e.target.value })}
-                                className="w-full h-12 bg-white border border-[#111111]/5 rounded-xl px-4 text-[11px] font-bold outline-none focus:border-[#111111] transition-all"
-                                placeholder="Notes..."
-                              />
-                           </div>
+                      <AnimatePresence initial={false}>
+                        {(proc.id === 'screening' || proc.id === 'embroidery') && !collapsedStages[proc.id] && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-[#111111]/5">
+                               <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                                  <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Reference ID</label>
+                                  <input 
+                                    type="text" 
+                                    value={proc.billNumber || ''} 
+                                    onChange={(e) => onUpdateProcess(selectedLot.id, proc.id, { billNumber: e.target.value })}
+                                    className="w-full h-12 bg-white border border-[#111111]/5 rounded-xl px-4 text-[11px] font-bold outline-none focus:border-[#111111] transition-all"
+                                    placeholder="Ref / Bill #"
+                                  />
+                               </div>
+                               <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                                  <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Observations</label>
+                                  <input 
+                                    type="text"
+                                    value={proc.notes || ''} 
+                                    onChange={(e) => onUpdateProcess(selectedLot.id, proc.id, { notes: e.target.value })}
+                                    className="w-full h-12 bg-white border border-[#111111]/5 rounded-xl px-4 text-[11px] font-bold outline-none focus:border-[#111111] transition-all"
+                                    placeholder="Notes..."
+                                  />
+                               </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <AnimatePresence initial={false}>
+                        {(proc.id === 'diamond' || proc.id === 'button') && !collapsedStages[proc.id] && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-[#111111]/5">
+                               {proc.id === 'button' && (
+                                  <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                                    <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Hardware / Pc</label>
+                                    <input 
+                                      type="number" 
+                                      value={proc.numButtons || ''} 
+                                      onChange={(e) => onUpdateProcess(selectedLot.id, proc.id, { numButtons: e.target.value })}
+                                      className="w-full h-12 bg-white border border-[#111111]/5 rounded-xl px-4 text-[11px] font-bold outline-none focus:border-[#111111] transition-all"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                               )}
+                               <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                                  <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Rate (₹)</label>
+                                  <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#111111]/30 font-bold text-[10px]">₹</span>
+                                    <input 
+                                      type="number" 
+                                      value={proc.pricePerPc || ''} 
+                                      onChange={(e) => onUpdateProcess(selectedLot.id, proc.id, { pricePerPc: e.target.value })}
+                                      className="w-full h-12 bg-white border border-[#111111]/5 rounded-xl pl-8 pr-4 text-[11px] font-bold outline-none focus:border-[#111111] transition-all"
+                                      placeholder="0.00"
+                                    />
+                                  </div>
+                               </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+ 
+                      {['screening', 'embroidery', 'diamond', 'button'].includes(proc.id) && (
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+                          <div className={`h-1 w-8 rounded-full transition-all duration-500 ${collapsedStages[proc.id] ? 'bg-[#111111]/5' : 'bg-[#D4AF37]/20 w-12'}`} />
                         </div>
                       )}
 
-                      {(proc.id === 'diamond' || proc.id === 'button') && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-[#111111]/5">
-                           {proc.id === 'button' && (
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Hardware / Pc</label>
-                                <input 
-                                  type="number" 
-                                  value={proc.numButtons || ''} 
-                                  onChange={(e) => onUpdateProcess(selectedLot.id, proc.id, { numButtons: e.target.value })}
-                                  className="w-full h-12 bg-white border border-[#111111]/5 rounded-xl px-4 text-[11px] font-bold outline-none focus:border-[#111111] transition-all"
-                                  placeholder="0"
-                                />
-                              </div>
-                           )}
-                           <div className="space-y-2">
-                              <label className="text-[9px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Rate (₹)</label>
-                              <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#111111]/30 font-bold text-[10px]">₹</span>
-                                <input 
-                                  type="number" 
-                                  value={proc.pricePerPc || ''} 
-                                  onChange={(e) => onUpdateProcess(selectedLot.id, proc.id, { pricePerPc: e.target.value })}
-                                  className="w-full h-12 bg-white border border-[#111111]/5 rounded-xl pl-8 pr-4 text-[11px] font-bold outline-none focus:border-[#111111] transition-all"
-                                  placeholder="0.00"
-                                />
-                              </div>
-                           </div>
-                        </div>
-                      )}
-
-                      {/* Loss Indicator */}
-                      {idx > 0 && proc.pieces > 0 && proc.pieces < selectedLot.processes[idx-1].pieces && (
-                        <div className="mt-4 flex items-center gap-3 text-red-600 bg-red-50 p-3 rounded-2xl border border-red-100">
-                           <AlertCircle size={14} />
-                           <span className="text-[10px] font-black uppercase tracking-widest">Deficit: {selectedLot.processes[idx-1].pieces - proc.pieces} Items lost in transit</span>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -514,9 +587,13 @@ export const LotModals = ({
                     >
                       Permanently Delete Lot
                     </button>
-                    <button onClick={closeSheet} className="w-full bg-[#D4AF37] text-[#111111] py-6 rounded-full font-black uppercase tracking-[0.2em] shadow-premium active:scale-95 transition-all">
-                      Save & Close Log
-                    </button>
+                     <button 
+                       onClick={closeSheet} 
+                       disabled={selectedLot.processes.some(p => Number(p.pieces || 0) > totalLotPcs)}
+                       className="w-full bg-green-600 text-white py-6 rounded-full font-black uppercase tracking-[0.2em] shadow-premium active:scale-95 transition-all hover:bg-green-700 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+                     >
+                       {selectedLot.processes.some(p => Number(p.pieces || 0) > totalLotPcs) ? 'Invalid Quantities' : 'Save & Close Log'}
+                     </button>
                  </div>
               </div>
           </div>
@@ -524,90 +601,120 @@ export const LotModals = ({
       </BottomSheet>
 
       {/* Full Screen Image Preview */}
-      {previewImage && (
-        <div className="fixed inset-0 z-[9999] bg-[#111111] flex flex-col items-center justify-center p-6">
+      {previewData && (
+        <div className="fixed inset-0 z-[9999] bg-[#111111] flex flex-col items-center justify-center p-6 backdrop-blur-xl">
           <button 
-            onClick={() => setPreviewImage(null)}
+            onClick={() => setPreviewData(null)}
             className="absolute top-8 right-8 w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center text-white active:scale-95 transition-all z-10"
           >
             <X size={32} />
           </button>
-          <img 
-            src={previewImage} 
-            className="max-w-full max-h-[80vh] object-contain rounded-[2rem] shadow-2xl animate-in zoom-in-95 duration-300"
-            alt="Preview"
-          />
+          
+          <div className="flex flex-col items-center gap-8 w-full max-w-4xl animate-in zoom-in-95 duration-500">
+            <img 
+              src={previewData.url} 
+              className="max-w-full max-h-[70vh] object-contain rounded-[2rem] shadow-2xl border border-white/5"
+              alt="Preview"
+            />
+            
+            <button 
+              onClick={() => {
+                const ref = previewData.type === 'itemImage' ? designInputRef : sampleInputRef;
+                ref.current?.click();
+                setPreviewData(null);
+              }}
+              className="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white hover:text-[#111111] transition-all active:scale-95"
+            >
+              <Pencil size={12} strokeWidth={3} />
+              Edit
+            </button>
+          </div>
          </div>
       )}
 
-      {/* Extend Sizes Sheet */}
-      <BottomSheet 
-        isOpen={isExtendSizesOpen} 
-        onClose={() => { setIsExtendSizesOpen(false); setExtendSizes({}); }} 
-        onBack={() => { setIsExtendSizesOpen(false); setExtendSizes({}); }}
-        title="Extend Production Range"
-        fullScreen
-      >
-        <div className="space-y-8 pb-10">
-          <div className="space-y-4">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#111111]/30 ml-1">Select New Sizes</label>
-            <div className="flex flex-wrap gap-2">
-              {allAvailableSizes.filter(s => !Object.keys(selectedLot?.sizes || {}).includes(s) && extendSizes[s] === undefined).map(size => (
-                <button 
-                  key={size}
-                  onClick={() => {
-                    const newExt = { ...extendSizes };
-                    if (newExt[size] !== undefined) delete newExt[size];
-                    else newExt[size] = '';
-                    setExtendSizes(newExt);
-                  }}
-                  className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${extendSizes[size] !== undefined ? 'bg-[#111111] text-[#D4AF37] shadow-lg scale-105' : 'bg-[#F5F5F5] text-[#111111]/30 hover:text-[#111111]'}`}
-                >
-                   {size}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {Object.keys(extendSizes).length > 0 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#111111]/30 ml-1">Set Quantities</label>
-              <div className="grid grid-cols-3 gap-3">
-                {Object.keys(extendSizes).map(size => (
-                  <div key={size} className="bg-white border border-[#111111]/5 p-3 rounded-2xl shadow-premium text-center flex flex-col items-center gap-2">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-[#111111]/20">{size}</p>
-                    <div className="relative w-full">
-                      <input 
-                        type="number"
-                        value={extendSizes[size]}
-                        onChange={(e) => setExtendSizes({ ...extendSizes, [size]: e.target.value })}
-                        className="w-full bg-transparent text-center text-lg font-display font-black text-[#111111] outline-none border-none p-0"
-                        placeholder="0"
-                      />
-                      <div className="h-0.5 w-4 bg-[#D4AF37]/20 mx-auto mt-0.5" />
-                    </div>
-                  </div>
+      {/* Add Sizes Sheet */}
+      {selectedLot && (
+        <BottomSheet 
+          isOpen={isExtendSizesOpen} 
+          onClose={closeSheet} 
+          onBack={closeSheet}
+          title="Add Sizes"
+          fullScreen
+        >
+          <div className="space-y-8 pb-10">
+            <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#111111]/30 ml-1">Select New Sizes</label>
+              <div className="flex flex-wrap gap-2">
+                {allAvailableSizes.filter(s => !Object.keys(selectedLot.sizes).includes(s) && extendSizes[s] === undefined).map(size => (
+                  <button 
+                    key={size}
+                    onClick={() => {
+                      const newExt = { ...extendSizes };
+                      newExt[size] = '';
+                      setExtendSizes(newExt);
+                    }}
+                    className="px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all bg-[#F5F5F5] text-[#111111]/30 hover:text-[#111111] hover:bg-[#E5E5E5] active:scale-95"
+                  >
+                     {size}
+                  </button>
                 ))}
+                {allAvailableSizes.filter(s => !Object.keys(selectedLot.sizes).includes(s) && extendSizes[s] === undefined).length === 0 && (
+                  <p className="text-[10px] font-black text-[#111111]/20 uppercase tracking-widest ml-1 py-4">All available sizes added</p>
+                )}
               </div>
             </div>
-          )}
 
-          <div className="pt-4">
-            <button 
-              onClick={() => {
-                const newSizes = { ...selectedLot.sizes, ...extendSizes };
-                onUpdateLot(selectedLot.id, { sizes: newSizes });
-                setIsExtendSizesOpen(false);
-                setExtendSizes({});
-              }}
-              disabled={Object.keys(extendSizes).length === 0}
-              className="w-full bg-[#111111] text-[#D4AF37] py-6 rounded-[2rem] font-black uppercase tracking-[0.3em] shadow-premium active:scale-95 transition-all disabled:opacity-20"
-            >
-              Update Production Range
-            </button>
+            {Object.keys(extendSizes).length > 0 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#111111]/30 ml-1">Set Quantities</label>
+                <div className="grid grid-cols-3 gap-2 md:gap-3">
+                  {Object.keys(extendSizes).map(size => (
+                    <div key={size} className="bg-white border border-[#111111]/5 p-3 md:p-5 rounded-2xl md:rounded-[2rem] shadow-premium text-center flex flex-col items-center gap-2 md:gap-3 relative group">
+                      <button 
+                        onClick={() => {
+                          const newExt = { ...extendSizes };
+                          delete newExt[size];
+                          setExtendSizes(newExt);
+                        }}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 md:w-8 md:h-8 bg-red-50 text-red-500 rounded-lg md:rounded-xl flex items-center justify-center transition-all active:scale-90"
+                      >
+                        <X size={12} />
+                      </button>
+                      
+                      <p className="text-lg md:text-xl font-display font-black text-[#111111]/20 uppercase tracking-[0.2em]">{size}</p>
+                      <div className="relative w-full">
+                        <input 
+                          type="number"
+                          value={extendSizes[size]}
+                          onChange={(e) => setExtendSizes({ ...extendSizes, [size]: e.target.value })}
+                          className="w-full bg-transparent text-center text-xl md:text-3xl font-display font-black text-[#111111] outline-none border-none p-0"
+                          placeholder="0"
+                          autoFocus
+                        />
+                        <div className="h-1 w-6 md:w-8 bg-green-500/20 mx-auto mt-1 rounded-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-4">
+                <button 
+                  onClick={() => {
+                    const newSizes = { ...selectedLot.sizes, ...extendSizes };
+                    onUpdateLot(selectedLot.id, { sizes: newSizes });
+                    closeSheet();
+                  }}
+                  disabled={Object.keys(extendSizes).length === 0 || Object.values(extendSizes).some(v => !v || Number(v) <= 0)}
+                  className="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-premium active:scale-95 transition-all disabled:opacity-20 hover:bg-green-700"
+                >
+                  Save {Object.keys(extendSizes).length > 0 ? `(${Object.keys(extendSizes).length} Sizes)` : ''}
+                </button>
+            </div>
           </div>
-        </div>
-      </BottomSheet>
+        </BottomSheet>
+      )}
     </>
   );
 };

@@ -18,7 +18,7 @@ export const WorkerDetail = ({
     <div className="space-y-6 lg:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 px-1 md:px-0">
       {/* Refined Header */}
       <div className="flex items-center gap-4 mb-2">
-        <button onClick={() => onNavigate('/workers')} className="w-10 h-10 rounded-full border border-[#111111]/10 flex items-center justify-center hover:bg-white transition-all active:scale-90"><ArrowLeft size={20} /></button>
+        <button onClick={() => onNavigate('/workers')} className="text-[#111111]/40 hover:text-[#111111] transition-all active:scale-90"><ArrowLeft size={24} /></button>
         <h2 className="text-xl md:text-3xl font-display font-black text-[#111111]">Worker Profile</h2>
       </div>
 
