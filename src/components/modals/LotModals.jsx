@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Check, ClipboardList, Camera, Image, Tag, IndianRupee, X, AlertCircle, Trash2, FileText, Pencil } from 'lucide-react';
 import { BottomSheet } from '../ui/BottomSheet';
+import { Button } from '../ui/Button';
 
 export const LotModals = ({ 
   isAddLotOpen, closeSheet, handleAddLot, newLot, setNewLot, 
@@ -243,7 +244,7 @@ export const LotModals = ({
           {localError && (
             <p className="text-center text-xs font-black text-red-500 uppercase tracking-widest animate-pulse pb-2">{localError}</p>
           )}
-          <button type="submit" className="w-full btn-primary py-5 shadow-premium">Initialize Production Cycle</button>
+          <Button fullWidth variant="primary" size="lg" type="submit">Initialize Production Cycle</Button>
         </form>
       </BottomSheet>
 
@@ -576,24 +577,28 @@ export const LotModals = ({
                  </div>
 
                  <div className="flex flex-col justify-end gap-4">
-                    <button 
+                    <Button 
+                      fullWidth
+                      variant="danger"
+                      size="md"
                       onClick={() => { 
                         if(confirm('CRITICAL ACTION: Are you sure you want to PERMANENTLY DELETE this production lot? This action cannot be undone and all associated production data for this lot will be lost.')) { 
                           onDeleteLot(selectedLot.id);
                           closeSheet();
                         }
                       }}
-                      className="w-full py-5 text-red-500 text-[11px] font-black uppercase tracking-[0.3em] hover:bg-red-500 hover:text-white rounded-full transition-all border-2 border-red-100"
                     >
                       Permanently Delete Lot
-                    </button>
-                     <button 
+                    </Button>
+                     <Button 
+                       fullWidth
+                       variant="primary"
+                       size="md"
                        onClick={closeSheet} 
                        disabled={selectedLot.processes.some(p => Number(p.pieces || 0) > totalLotPcs)}
-                       className="w-full bg-green-600 text-white py-6 rounded-full font-black uppercase tracking-[0.2em] shadow-premium active:scale-95 transition-all hover:bg-green-700 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
                      >
                        {selectedLot.processes.some(p => Number(p.pieces || 0) > totalLotPcs) ? 'Invalid Quantities' : 'Save & Close Log'}
-                     </button>
+                     </Button>
                  </div>
               </div>
           </div>
@@ -700,17 +705,18 @@ export const LotModals = ({
             )}
 
             <div className="pt-4">
-                <button 
+                <Button 
+                  fullWidth
+                  variant="primary"
                   onClick={() => {
                     const newSizes = { ...selectedLot.sizes, ...extendSizes };
                     onUpdateLot(selectedLot.id, { sizes: newSizes });
                     closeSheet();
                   }}
                   disabled={Object.keys(extendSizes).length === 0 || Object.values(extendSizes).some(v => !v || Number(v) <= 0)}
-                  className="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-premium active:scale-95 transition-all disabled:opacity-20 hover:bg-green-700"
                 >
                   Save {Object.keys(extendSizes).length > 0 ? `(${Object.keys(extendSizes).length} Sizes)` : ''}
-                </button>
+                </Button>
             </div>
           </div>
         </BottomSheet>

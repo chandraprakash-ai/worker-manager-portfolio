@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Search, Layout, ClipboardList, Plus, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Layout, ClipboardList, Plus, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { SearchBar } from '../ui/SearchBar';
 
 export const LotDashboard = ({ 
   search, 
@@ -33,15 +34,8 @@ export const LotDashboard = ({
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="relative group flex-1 sm:min-w-[300px]">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#111111]/20" size={20} />
-            <input 
-              type="text" 
-              placeholder="Filter by Lot #, Brand..." 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
-              className="w-full bg-white border border-[#111111]/5 rounded-2xl py-4 pl-14 pr-6 shadow-sm focus:border-[#D4AF37]/30 outline-none transition-all font-medium text-sm" 
-            />
+          <div className="flex-1 sm:min-w-[300px]">
+            <SearchBar value={search} onChange={setSearch} placeholder="Filter by Lot #, Brand..." />
           </div>
         </div>
       </div>

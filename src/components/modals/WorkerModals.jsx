@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Plus, CheckCircle2, IndianRupee, ArrowLeft, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BottomSheet } from '../ui/BottomSheet';
+import { Button } from '../ui/Button';
 
 export const WorkerModals = ({ 
   isBulkEntryOpen, closeSheet, bulkRows, setBulkRows, handleBulkSubmit,
@@ -127,7 +128,11 @@ export const WorkerModals = ({
             ))}
           </div>
 
-          <button 
+          <Button 
+            fullWidth 
+            variant="dashed" 
+            size="lg" 
+            icon={Plus}
             onClick={() => {
               if (bulkRows.length === 0) {
                 setBulkRows([{ date: new Date().toISOString().split('T')[0], pieces: '', rate: '' }]);
@@ -146,12 +151,10 @@ export const WorkerModals = ({
                 const field = !lastRow.pieces ? `bulk-pcs-${bulkRows.length - 1}` : `bulk-rate-${bulkRows.length - 1}`;
                 document.getElementById(field)?.focus();
               }
-            }} 
-            className="w-full py-4 md:py-6 border-2 border-dashed border-[#111111]/10 rounded-[2rem] md:rounded-[2.5rem] text-[#111111]/30 font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-[#111111]/5 hover:text-[#111111] transition-all"
+            }}
           >
-            <Plus size={16} /> 
             {bulkRows.length === 0 ? 'Start Entering Work' : 'Add Another Entry'}
-          </button>
+          </Button>
 
           <div className="pt-6 sticky bottom-0 bg-white/80 backdrop-blur-md pb-4 flex flex-col gap-3">
             {localError && (
@@ -159,12 +162,14 @@ export const WorkerModals = ({
                 {localError}
               </p>
             )}
-            <button 
-              onClick={localSubmit} 
-              className="w-full bg-green-600 text-white py-4 md:py-6 rounded-[1.5rem] md:rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-premium active:scale-95 transition-all border border-green-700/20 hover:bg-green-700"
+            <Button 
+              fullWidth 
+              variant="primary" 
+              size="lg" 
+              onClick={localSubmit}
             >
               Save All {bulkRows.filter(r => r.pieces && r.rate).length} Entries
-            </button>
+            </Button>
           </div>
         </div>
       </BottomSheet>
@@ -343,21 +348,25 @@ export const WorkerModals = ({
           </div>
 
           <div className="space-y-4 pt-4 px-2">
-            <button 
-              onClick={() => handleSettle(calculateBalance(transactions))} 
-              className="w-full bg-green-600 text-white py-6 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-premium active:scale-95 transition-all border border-green-700/30 hover:bg-green-700 flex items-center justify-center gap-3"
+            <Button 
+              fullWidth 
+              variant="primary" 
+              size="md" 
+              icon={CheckCircle2}
+              onClick={() => handleSettle(calculateBalance(transactions))}
             >
-              <CheckCircle2 size={20} />
-              Confirm & Close Ledger
-            </button>
+              Confirm and Settle
+            </Button>
             
-            <button 
-              onClick={() => generateInvoicePDF(activeWorker, activeTransactions, calculateBalance(transactions))} 
-              className="w-full py-5 flex items-center justify-center gap-3 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] text-[#111111]/40 border border-[#111111]/5 hover:bg-[#F5F5F5] transition-all"
+            <Button 
+              fullWidth 
+              variant="grey" 
+              size="md" 
+              icon={FileText}
+              onClick={() => generateInvoicePDF(activeWorker, activeTransactions, calculateBalance(transactions))}
             >
-              <FileText size={16} /> 
               Generate Statement PDF
-            </button>
+            </Button>
           </div>
         </div>
       </BottomSheet>

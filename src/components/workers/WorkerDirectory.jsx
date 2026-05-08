@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Search, ChevronRight, Users, Plus } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Users, Plus } from 'lucide-react';
+import { SearchBar } from '../ui/SearchBar';
 
 export const WorkerDirectory = ({ search, setSearch, workers, onOpenSheet, onNavigate }) => {
   return (
@@ -10,16 +11,7 @@ export const WorkerDirectory = ({ search, setSearch, workers, onOpenSheet, onNav
          <h2 className="text-xl md:text-3xl text-[#111111] font-display font-black tracking-tight">Workers Directory</h2>
       </div>
       
-      <div className="relative group">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#111111]/20" size={20} />
-        <input 
-          type="text" 
-          placeholder="Search workers..." 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)} 
-          className="w-full bg-white border border-surface-100 rounded-[1.5rem] py-5 pl-14 pr-6 shadow-sm focus:border-[#D4AF37]/30 outline-none transition-all font-medium" 
-        />
-      </div>
+      <SearchBar value={search} onChange={setSearch} placeholder="Search workers..." />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-12">
         {workers.map(worker => (
