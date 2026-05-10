@@ -1,0 +1,314 @@
+import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Tag, Image, Check, X, Pencil, Loader2, Plus } from 'lucide-react';
+import { BottomSheet } from '../../ui/BottomSheet';
+import { Button } from '../../ui/Button';
+
+export const LotDetailDashboard = ({
+  isOpen,
+  onClose,
+  selectedLot,
+  onUpdateLot,
+  onUpdateProcess,
+  onDeleteLot,
+  onOpenSheet,
+  setPreviewData
+}) => {
+  const [collapsedStages, setCollapsedStages] = useState({});
+  // Initialize draftLot with a deep copy of selectedLot and hydrated processes
+  const [draftLot, setDraftLot] = useState(() => {
+    if (!selectedLot) return null;
+    
+    const STAGE_MAP = {
+      screening: 'Screening', embroidery: 'Embroidery', cutting: 'Cutting',
+      stitching: 'Stitching', interlock: 'Interlock', diamond: 'Diamond',
+      button: 'Button', steampress: 'Steam Press', finishing: 'Finishing'
+    };
+
+    const hydratedProcesses = selectedLot.processes || (selectedLot.stages || []).map(id => ({
+      id,
+      name: STAGE_MAP[id] || id.charAt(0).toUpperCase() + id.slice(1),
+      pieces: 0,
+      isDone: false
+    }));
+
+    return { ...selectedLot, processes: hydratedProcesses };
+  });
+
+  const matrixRef = useRef(null);
+
+  // Sync draft if selectedLot changes from outside (only if draft is fresh)
+  React.useEffect(() => {
+    if (selectedLot && (!draftLot || draftLot.id !== selectedLot.id)) {
+      setDraftLot({ ...selectedLot, processes: selectedLot.processes || [] });
+    }
+  }, [selectedLot?.id]);
+
+  if (!draftLot) return null;
+
+  const handleFinalSave = async () => {
+    // Sanitize numeric fields before saving
+    const sanitizedLot = {
+      ...draftLot,
+      sizes: Object.fromEntries(
+        Object.entries(draftLot.sizes).map(([s, q]) => [s, Number(q) || 0])
+      ),
+      processes: draftLot.processes.map(p => ({
+        ...p,
+        pieces: p.pieces === '' ? 0 : Number(p.pieces),
+        numButtons: p.numButtons === '' ? 0 : Number(p.numButtons),
+        pricePerPc: p.pricePerPc === '' ? 0 : Number(p.pricePerPc)
+      }))
+    };
+
+    await onUpdateLot(selectedLot.id, sanitizedLot);
+    onClose();
+  };
+
+  const updateDraft = (updates) => {
+    setDraftLot(prev => ({ ...prev, ...updates }));
+  };
+
+  const updateDraftProcess = (procId, updates) => {
+    setDraftLot(prev => ({
+      ...prev,
+      processes: prev.processes.map(p => p.id === procId ? { ...p, ...updates } : p)
+    }));
+  };
+  const totalLotPcs = Object.values(draftLot.sizes).reduce((acc, val) => acc + (Number(val) || 0), 0);
+
+  return (
+    <BottomSheet isOpen={isOpen} onClose={onClose} onBack={onClose} title="Lot Dashboard" fullScreen>
+      <div className="space-y-8 pb-10">
+        {/* Header Section */}
+        <div className="bg-[#111111] text-white p-6 md:p-10 rounded-[2.5rem] relative overflow-hidden shadow-premium flex flex-col justify-between min-h-[260px]">
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <Tag size={120} strokeWidth={1} />
+          </div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] opacity-80">{draftLot.brand} Batch</span>
+            </div>
+            <h3 className="text-5xl md:text-8xl font-display font-black tracking-tighter leading-none mb-2">{draftLot.lotNumber}</h3>
+          </div>
+          <div className="relative z-10 flex items-end justify-between pt-8 border-t border-white/10">
+            <div className="flex gap-8">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Status</span>
+                <span className="text-sm font-black uppercase text-[#D4AF37]">{draftLot.status}</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] mb-1">Total Pieces</p>
+              <h4 className="text-4xl font-display font-black leading-none">{totalLotPcs}</h4>
+            </div>
+          </div>
+        </div>
+
+        {/* Media Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <MediaCard 
+            label="Design Asset" 
+            url={draftLot.itemImage} 
+            onClick={() => setPreviewData({ url: draftLot.itemImage, type: 'itemImage' })} 
+          />
+          <MediaCard 
+            label="Sample Photo" 
+            url={draftLot.sampleImage} 
+            onClick={() => setPreviewData({ url: draftLot.sampleImage, type: 'sampleImage' })} 
+          />
+        </div>
+
+        {/* Quantity Matrix */}
+        <div className="space-y-6" ref={matrixRef}>
+          <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#111111]/30">Quantity Matrix</h4>
+          <div className="grid grid-cols-4 gap-2 md:gap-3">
+            {Object.entries(draftLot.sizes).map(([size, qty]) => (
+              <div key={size} className="bg-white border border-[#111111]/5 p-4 rounded-2xl shadow-sm flex flex-col items-center justify-center relative group transition-all hover:border-[#D4AF37]/30">
+                <button 
+                  onClick={() => confirm(`Remove size ${size}?`) && updateDraft({ sizes: Object.fromEntries(Object.entries(draftLot.sizes).filter(([s]) => s !== size)) })}
+                  className="absolute top-2 right-2 w-6 h-6 bg-[#F5F5F5] rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
+                >
+                  <X size={10} />
+                </button>
+                
+                <div className="text-center w-full">
+                  <span className="text-[10px] font-black text-[#111111]/30 uppercase tracking-[0.2em] mb-1 block">{size}</span>
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      value={qty}
+                      onChange={(e) => updateDraft({ sizes: { ...draftLot.sizes, [size]: e.target.value } })}
+                      className="w-full bg-transparent text-center text-2xl font-display font-black text-[#111111] outline-none border-none p-0"
+                    />
+                    <div className="h-[2px] w-6 bg-[#D4AF37]/30 mx-auto mt-1 rounded-full" />
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            <button 
+              onClick={() => onOpenSheet(`/lot/${draftLot.id}/add-sizes`)}
+              className="bg-[#F5F5F5] border-2 border-dashed border-[#111111]/5 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#D4AF37]/30 min-h-[90px] transition-all"
+            >
+              <div className="w-8 h-8 rounded-full border border-[#111111]/5 flex items-center justify-center">
+                <Plus size={14} className="text-[#111111]/20" />
+              </div>
+              <span className="text-[8px] font-black uppercase tracking-widest text-[#111111]/20">Add Size</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Production Pipeline */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#111111]/40">Production Pipeline</h4>
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {draftLot.processes.map((proc, idx) => (
+              <ProcessCard 
+                key={proc.id}
+                proc={proc}
+                idx={idx}
+                draftLot={draftLot}
+                totalLotPcs={totalLotPcs}
+                updateDraftProcess={updateDraftProcess}
+                isCollapsed={collapsedStages[proc.id]}
+                toggleCollapse={() => setCollapsedStages(prev => ({ ...prev, [proc.id]: !prev[proc.id] }))}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Notes & Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="bg-white border border-[#111111]/5 rounded-[3rem] p-6 shadow-premium">
+            <span className="text-sm font-black uppercase text-[#111111] mb-4 block">Notes</span>
+            <textarea 
+              value={draftLot.notes || ''}
+              onChange={(e) => updateDraft({ notes: e.target.value })}
+              className="w-full h-32 bg-transparent text-[15px] font-bold outline-none resize-none"
+              placeholder="Add production observations..."
+            />
+          </div>
+          <div className="flex flex-col justify-end gap-4">
+            <Button variant="danger" onClick={() => confirm('Permanently delete this lot?') && onDeleteLot(draftLot.id)}>Delete Lot</Button>
+            <Button variant="primary" onClick={handleFinalSave}>Save & Close</Button>
+          </div>
+        </div>
+      </div>
+    </BottomSheet>
+  );
+};
+
+const MediaCard = ({ label, url, onClick }) => (
+  <div onClick={onClick} className="bg-white border border-[#111111]/10 rounded-[2.5rem] flex flex-col items-center justify-center shadow-premium aspect-video relative overflow-hidden cursor-pointer hover:border-[#D4AF37]/40">
+    {url ? (
+      <img src={url} className="absolute inset-0 w-full h-full object-cover" />
+    ) : (
+      <div className="flex flex-col items-center gap-3">
+        <Image size={24} className="text-[#111111]/20" />
+        <p className="text-[11px] font-black uppercase text-[#111111]/30">{label}</p>
+      </div>
+    )}
+  </div>
+);
+
+const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isCollapsed, toggleCollapse }) => {
+  const prevPcs = idx > 0 ? Number(draftLot.processes[idx-1].pieces || 0) : totalLotPcs;
+  const isDeficit = Number(proc.pieces) > 0 && Number(proc.pieces) < prevPcs;
+  const isOverLimit = Number(proc.pieces) > totalLotPcs;
+  const isContractorStage = ['screening', 'embroidery', 'stitching', 'diamond', 'button', 'steampress', 'finishing'].includes(proc.id);
+
+  return (
+    <div className={`p-6 rounded-[2.5rem] border transition-all relative ${proc.isDone ? 'bg-green-50/50 border-green-200' : 'bg-white border-[#111111]/5 shadow-premium'}`}>
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-5">
+          <button 
+            onClick={() => updateDraftProcess(proc.id, { isDone: !proc.isDone })}
+            className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center ${proc.isDone ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-[#111111]/10 text-[#111111]/10'}`}
+          >
+            {proc.isDone && <Check size={24} strokeWidth={4} />}
+          </button>
+          <div onClick={toggleCollapse} className="cursor-pointer">
+            <h3 className="text-lg font-display font-black text-[#111111]">{proc.name}</h3>
+            <p className="text-[9px] font-black uppercase text-[#111111]/30">{proc.isDone ? 'Validated' : 'Awaiting Input'}</p>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <div className={`flex items-center gap-1.5 p-1 rounded-2xl ${isOverLimit ? 'bg-orange-50' : isDeficit ? 'bg-red-50' : 'bg-[#F5F5F5]'}`}>
+            <span className="text-[11px] font-black ml-3 opacity-40">Pcs</span>
+            <input 
+              type="number" 
+              value={proc.pieces || ''} 
+              onChange={(e) => updateDraftProcess(proc.id, { pieces: e.target.value })}
+              className="w-16 bg-transparent text-center font-black outline-none"
+            />
+          </div>
+          {isOverLimit && <span className="text-[7px] font-black text-orange-600 uppercase">Over Limit</span>}
+          {isDeficit && <span className="text-[7px] font-black text-red-500 uppercase animate-pulse">Deficit</span>}
+        </div>
+      </div>
+      
+      {/* Expanded Logic */}
+      {!isCollapsed && isContractorStage && (
+        <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-[#111111]/5">
+           <div className="space-y-1">
+             <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Bill Reference</span>
+             <input 
+               type="text" 
+               value={proc.billNumber || ''} 
+               onChange={(e) => updateDraftProcess(proc.id, { billNumber: e.target.value })}
+               className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
+               placeholder="Ref #"
+             />
+           </div>
+           
+           <div className="space-y-1">
+             <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Notes</span>
+             <input 
+               type="text" 
+               value={proc.notes || ''} 
+               onChange={(e) => updateDraftProcess(proc.id, { notes: e.target.value })}
+               className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
+               placeholder="Notes..."
+             />
+           </div>
+
+           <div className="col-span-2 grid grid-cols-2 gap-4 pt-2">
+              <div className="space-y-1">
+                <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Rate (₹)</span>
+                <input 
+                  type="number" 
+                  value={proc.pricePerPc || ''} 
+                  onChange={(e) => updateDraftProcess(proc.id, { pricePerPc: e.target.value })}
+                  className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold font-display"
+                  placeholder="0.00"
+                />
+              </div>
+
+              {proc.id === 'button' && (
+                <div className="space-y-1">
+                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Buttons/Pc</span>
+                  <input 
+                    type="number" 
+                    value={proc.numButtons || ''} 
+                    onChange={(e) => updateDraftProcess(proc.id, { numButtons: e.target.value })}
+                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
+                    placeholder="Buttons"
+                  />
+                </div>
+              )}
+           </div>
+        </div>
+      )}
+
+      {isContractorStage && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+          <div className={`h-1 rounded-full transition-all duration-500 ${isCollapsed ? 'bg-[#111111]/5 w-8' : 'bg-[#D4AF37]/20 w-12'}`} />
+        </div>
+      )}
+    </div>
+  );
+};

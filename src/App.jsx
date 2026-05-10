@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from './store/useAuthStore';
 import { useDataStore } from './store/useDataStore';
 import { 
@@ -11,7 +11,6 @@ import {
 import { BottomSheet } from './components/ui/BottomSheet';
 import { haptic } from './utils/haptics';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRef } from 'react';
 import { generateInvoicePDF } from './utils/generateInvoice';
 import { 
   Routes, Route, useNavigate, useLocation, useParams, useSearchParams 
@@ -28,26 +27,58 @@ import { InventoryDashboard } from './components/inventory/InventoryDashboard';
 import { LotModals } from './components/modals/LotModals';
 
 function App() {
-  const { user, login, logout } = useAuthStore();
-  const { 
-    workers, transactions, fetchWorkers, addWorker, updateWorker, addTransaction, 
-    settleWorker, fetchTransactions, addBulkTransactions, getSettlements, 
-    getSettlementTransactions, updateTransaction, deleteTransaction,
-    allInventory, allInventoryLogs, addInventoryItem, updateInventoryStock, deleteInventoryItem,
-    allLots, addLot, updateLotProcess, deleteLot, updateLot
-  } = useDataStore();
-  
+  // --- AUTH STORE ---
+  const user = useAuthStore(state => state.user);
+  const login = useAuthStore(state => state.login);
+  const logout = useAuthStore(state => state.logout);
+
+  // --- DATA STORE ---
+  const workers = useDataStore(state => state.workers);
+  const allLots = useDataStore(state => state.allLots);
+  const allInventory = useDataStore(state => state.allInventory);
+  const transactions = useDataStore(state => state.transactions);
+  const initializeData = useDataStore(state => state.initializeData);
+  const isLoading = useDataStore(state => state.isLoading);
+  const error = useDataStore(state => state.error);
+  const fetchTransactions = useDataStore(state => state.fetchTransactions);
+  const addWorker = useDataStore(state => state.addWorker);
+  const updateWorker = useDataStore(state => state.updateWorker);
+  const addTransaction = useDataStore(state => state.addTransaction);
+  const settleWorker = useDataStore(state => state.settleWorker);
+  const addLot = useDataStore(state => state.addLot);
+  const updateLot = useDataStore(state => state.updateLot);
+  const updateLotProcess = useDataStore(state => state.updateLotProcess);
+  const deleteLot = useDataStore(state => state.deleteLot);
+  const addInventoryItem = useDataStore(state => state.addInventoryItem);
+  const updateInventoryStock = useDataStore(state => state.updateInventoryStock);
+  const deleteInventoryItem = useDataStore(state => state.deleteInventoryItem);
+  const getSettlements = useDataStore(state => state.getSettlements);
+  const getSettlementTransactions = useDataStore(state => state.getSettlementTransactions);
+  const updateTransaction = useDataStore(state => state.updateTransaction);
+  const deleteTransaction = useDataStore(state => state.deleteTransaction);
+  const addBulkTransactions = useDataStore(state => state.addBulkTransactions);
+
+  // --- LOCAL UI STATE ---
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
   const [search, setSearch] = useState('');
+  const [viewingSettlement, setViewingSettlement] = useState(null);
+  const [editingTx, setEditingTx] = useState(null);
+  const [newWorker, setNewWorker] = useState({ name: '', phone: '', address: '' });
+  const [newTx, setNewTx] = useState({ type: 'work', pieces: '', rate: '', amount: '', date: new Date().toISOString().split('T')[0] });
+  const [bulkRows, setBulkRows] = useState([{ date: new Date().toISOString().split('T')[0], pieces: '', rate: '' }]);
+  const [newItem, setNewItem] = useState({ name: '', category: 'Fabric', quantity: '', unit: 'Meters', minThreshold: '5' });
+  const [activeInvItem, setActiveInvItem] = useState(null);
+  const [updateQty, setUpdateQty] = useState('');
   
+  // --- NAVIGATION & ROUTING ---
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const lastRowRef = useRef(null);
 
   const selectedWorkerId = location.pathname.split('/worker/')[1]?.split('/')[0];
   const activeWorker = workers.find(w => w.id === selectedWorkerId);
-  
   const selectedLotId = location.pathname.split('/lot/')[1]?.split('/')[0];
   const selectedLot = allLots.find(l => l.id === selectedLotId);
   
@@ -55,7 +86,6 @@ function App() {
   const isWorkersPage = location.pathname.startsWith('/worker') || location.pathname === '/workers' || location.pathname === '/add-worker';
   const isInventoryPage = location.pathname.startsWith('/inventory');
   const isLotPage = location.pathname.startsWith('/lot');
-  
   const isHistoryOpen = location.pathname.includes('/history');
   const isBulkEntryOpen = location.pathname.includes('/bulk');
   const isSettlementOpen = location.pathname.includes('/settle');
@@ -67,12 +97,8 @@ function App() {
   const isAddLotOpen = location.pathname.includes('/lot/add');
   const isLotDetailOpen = location.pathname.startsWith('/lot/') && !location.pathname.endsWith('/add');
   const isExtendSizesOpen = location.pathname.endsWith('/add-sizes');
-  
-  const [newItem, setNewItem] = useState({ name: '', category: 'Fabric', quantity: '', unit: 'Meters', minThreshold: '5' });
-  const [activeInvItem, setActiveInvItem] = useState(null);
-  const [updateQty, setUpdateQty] = useState('');
-  const defaultStages = ['screening', 'embroidery', 'cutting', 'stitching', 'interlock', 'diamond', 'button', 'steampress'];
 
+  const defaultStages = ['screening', 'embroidery', 'cutting', 'stitching', 'interlock', 'diamond', 'button', 'steampress'];
   const [newLot, setNewLot] = useState({ 
     lotNumber: '', 
     brand: 'KS4U',
@@ -81,6 +107,171 @@ function App() {
     sampleImage: null,
     stages: defaultStages
   });
+
+  // --- EFFECTS ---
+  useEffect(() => {
+    if (user) {
+      initializeData();
+    }
+  }, [user, initializeData]);
+
+  useEffect(() => {
+    if (selectedWorkerId) {
+      fetchTransactions(selectedWorkerId);
+    }
+  }, [selectedWorkerId, fetchTransactions]);
+
+  useEffect(() => {
+    if (isBulkEntryOpen && lastRowRef.current) {
+      lastRowRef.current.focus();
+    }
+  }, [isBulkEntryOpen, bulkRows.length]);
+
+  // --- HANDLERS ---
+  const openSheet = (path) => {
+    haptic();
+    navigate(path);
+  };
+
+  const closeSheet = () => {
+    navigate(-1);
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    const success = await login(username, pin);
+    if (success) {
+      haptic('medium');
+    } else haptic('error');
+  };
+
+  const handleAddWorker = (e) => {
+    e.preventDefault();
+    if (!newWorker.name.trim()) {
+      alert("Worker name cannot be empty.");
+      return;
+    }
+    addWorker(newWorker);
+    setNewWorker({ name: '', phone: '', address: '' });
+    closeSheet();
+    haptic('medium');
+  };
+
+  const handleUpdateWorker = (e) => {
+    e.preventDefault();
+    if (!newWorker.name.trim()) {
+      alert("Worker name cannot be empty.");
+      return;
+    }
+    updateWorker(activeWorker.id, newWorker);
+    setNewWorker({ name: '', phone: '', address: '' });
+    closeSheet();
+    haptic('medium');
+  };
+
+  const handleSubmitTransaction = (e) => {
+    e.preventDefault();
+    const pieces = Number(newTx.pieces) || 0;
+    const rate = Number(newTx.rate) || 0;
+    const amount = newTx.type === 'work' ? pieces * rate : (Number(newTx.amount) || 0);
+    
+    // Create a clean object with ONLY relevant fields
+    const sanitizedTx = {
+      type: newTx.type,
+      amount: amount,
+      date: newTx.date,
+      status: 'active'
+    };
+
+    // Only add pieces/rate if it's actual work
+    if (newTx.type === 'work') {
+      sanitizedTx.pieces = pieces;
+      sanitizedTx.rate = rate;
+    }
+
+    if (editingTx) {
+      updateTransaction(editingTx.id, sanitizedTx);
+    } else {
+      addTransaction({
+        ...sanitizedTx,
+        workerId: activeWorker.id
+      });
+    }
+    
+    setEditingTx(null);
+    setNewTx({ type: 'work', pieces: '', rate: '', amount: '', date: new Date().toISOString().split('T')[0] });
+    closeSheet();
+    haptic('medium');
+};
+
+  const handleDeleteTx = async (id) => {
+    if (confirm("Are you sure you want to delete this entry?")) {
+      await deleteTransaction(id);
+      haptic('medium');
+    }
+  };
+
+  const handleBulkSubmit = async () => {
+    // Check for partially filled rows
+    const incompleteRows = bulkRows.filter(r => (r.pieces || r.rate) && (!r.pieces || !r.rate || Number(r.pieces) <= 0 || Number(r.rate) <= 0));
+    if (incompleteRows.length > 0) {
+      alert("Some entries are incomplete. Please enter both Pieces and Rate for all rows.");
+      return;
+    }
+
+    const validRows = bulkRows.filter(r => Number(r.pieces) > 0 && Number(r.rate) > 0);
+    if (validRows.length === 0) {
+      alert("Please enter at least one valid row.");
+      return;
+    }
+    
+    // Sanitize and format for Firebase
+    const sanitizedRows = validRows.map(row => ({
+      workerId: activeWorker.id,
+      type: 'work',
+      pieces: Number(row.pieces),
+      rate: Number(row.rate),
+      amount: Number(row.pieces) * Number(row.rate),
+      date: row.date,
+      status: 'active'
+    }));
+
+    await addBulkTransactions(sanitizedRows);
+    
+    setBulkRows([{ date: new Date().toISOString().split('T')[0], pieces: '', rate: '' }]);
+    closeSheet();
+    haptic('heavy');
+    fetchTransactions(activeWorker.id);
+  };
+
+  const calculateBalance = (txs) => {
+    const activeTxs = txs.filter(tx => tx.status === 'active');
+    // Work is only positive work type
+    const work = activeTxs.filter(tx => tx.type === 'work').reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    // Advance is everything else (defensive)
+    const advance = activeTxs.filter(tx => tx.type !== 'work').reduce((sum, tx) => sum + (tx.amount || 0), 0);
+    return work - advance;
+  };
+
+  const handleSettle = async (balance) => {
+    try {
+      // Only settle transactions that actually contributed to the balance
+      const activeTxs = transactions.filter(tx => tx.status === 'active');
+      const validTxs = activeTxs.filter(tx => tx.type === 'work' || tx.type === 'advance');
+      
+      if (validTxs.length === 0) {
+        alert("No valid transactions to settle.");
+        return;
+      }
+
+      await settleWorker(activeWorker.id, balance, validTxs);
+      closeSheet();
+      haptic('heavy');
+      fetchTransactions(activeWorker.id);
+    } catch (err) {
+      alert(`Settlement failed: ${err.message}`);
+    }
+  };
 
   const handleAddInventory = (e) => {
     e.preventDefault();
@@ -98,198 +289,61 @@ function App() {
     haptic('medium');
   };
 
-  const handleAddLot = (e) => {
-    e.preventDefault();
-    addLot({
-      ...newLot,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      status: 'In Progress'
-    });
+  const handleAddLot = (e, cloudData = null) => {
+    if (e) e.preventDefault();
+    const lotToSave = cloudData || newLot;
+    addLot(lotToSave);
     setNewLot({ 
       lotNumber: '', 
       brand: 'KS4U',
       sizes: {}, 
       itemImage: null,
       sampleImage: null,
-      stages: defaultStages
+      notes: '',
+      processes: [
+        { id: 'screening', name: 'Screening', pieces: 0, isDone: false },
+        { id: 'embroidery', name: 'Embroidery', pieces: 0, isDone: false },
+        { id: 'diamond', name: 'Diamond', pieces: 0, isDone: false },
+        { id: 'button', name: 'Button', pieces: 0, isDone: false },
+        { id: 'finishing', name: 'Finishing', pieces: 0, isDone: false },
+      ]
     });
-    navigate('/lot', { replace: true });
-    haptic('heavy');
-  };
-
-
-  
-  useEffect(() => {
-    if (activeWorker) {
-      fetchTransactions(activeWorker.id);
-    }
-  }, [activeWorker?.id]);
-
-  const [viewingSettlement, setViewingSettlement] = useState(null);
-  const [editingTx, setEditingTx] = useState(null);
-
-  // Form states
-  const [newWorker, setNewWorker] = useState({ name: '', phone: '', address: '' });
-  const [newTx, setNewTx] = useState({ type: 'work', pieces: '', rate: '', amount: '', date: new Date().toISOString().split('T')[0] });
-  const [bulkRows, setBulkRows] = useState([{ date: new Date().toISOString().split('T')[0], pieces: '', rate: '' }]);
-  const lastRowRef = useRef(null);
-
-  useEffect(() => {
-    if (isBulkEntryOpen && lastRowRef.current) {
-      lastRowRef.current.focus();
-    }
-  }, [isBulkEntryOpen, bulkRows.length]);
-
-  useEffect(() => {
-    if (user) {
-      fetchWorkers();
-    }
-  }, [user]);
-
-  const openSheet = (path) => {
-    haptic();
-    navigate(path);
-  };
-
-  const closeSheet = () => {
-    navigate(-1);
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const success = await login(username, pin);
-    if (success) haptic('medium');
-    else haptic('error');
-  };
-
-  const handleAddWorker = (e) => {
-    e.preventDefault();
-    if (!newWorker.name.trim()) {
-      alert("Worker name cannot be empty.");
-      return;
-    }
-    if (newWorker.phone && !/^\d{10}$/.test(newWorker.phone)) {
-      alert("Please enter a valid 10-digit phone number.");
-      return;
-    }
-    addWorker({ ...newWorker, id: Date.now().toString() });
-    setNewWorker({ name: '', phone: '', address: '' });
     closeSheet();
     haptic('medium');
   };
 
-  const handleUpdateWorker = (e) => {
-    e.preventDefault();
-    if (!newWorker.name.trim()) {
-      alert("Worker name cannot be empty.");
-      return;
-    }
-    if (newWorker.phone && !/^\d{10}$/.test(newWorker.phone)) {
-      alert("Please enter a valid 10-digit phone number.");
-      return;
-    }
-    updateWorker(activeWorker.id, newWorker);
-    setNewWorker({ name: '', phone: '', address: '' });
-    closeSheet();
-    haptic('medium');
-  };
 
-  const handleSubmitTransaction = (e) => {
-    e.preventDefault();
-    if (newTx.type === 'work' && (Number(newTx.pieces) <= 0 || Number(newTx.rate) <= 0)) {
-      alert("Pieces and Rate must be greater than 0.");
-      return;
-    }
-    if (newTx.type === 'advance' && Number(newTx.amount) <= 0) {
-      alert("Advance amount must be greater than 0.");
-      return;
-    }
 
-    const amount = newTx.type === 'work' ? Number(newTx.pieces) * Number(newTx.rate) : Number(newTx.amount);
-    
-    if (editingTx) {
-      updateTransaction(editingTx.id, { ...newTx, amount });
-    } else {
-      addTransaction({
-        ...newTx,
-        id: Date.now().toString(),
-        workerId: activeWorker.id,
-        amount
-      });
-    }
-    
-    setEditingTx(null);
-    setNewTx({ type: 'work', pieces: '', rate: '', amount: '', date: new Date().toISOString().split('T')[0] });
-    closeSheet();
-    haptic('medium');
-    fetchTransactions(activeWorker.id);
-  };
-
-  const handleDeleteTx = async (id) => {
-    if (confirm("Are you sure you want to delete this entry?")) {
-      await deleteTransaction(id);
-      haptic('medium');
-    }
-  };
-
-  const handleBulkSubmit = async () => {
-    // Check for partially filled rows
-    const incompleteRows = bulkRows.filter(r => (r.pieces || r.rate) && (!r.pieces || !r.rate || Number(r.pieces) <= 0 || Number(r.rate) <= 0));
-    if (incompleteRows.length > 0) {
-      alert("Some entries are incomplete. Please enter both Pieces and Rate for all rows, or remove the incomplete rows.");
-      return;
-    }
-
-    const validRows = bulkRows.filter(r => Number(r.pieces) > 0 && Number(r.rate) > 0);
-    if (validRows.length === 0) {
-      alert("Please enter at least one valid row with Pieces and Rate.");
-      return;
-    }
-    
-    validRows.forEach(row => {
-      addTransaction({
-        id: Math.random().toString(36).substr(2, 9),
-        workerId: activeWorker.id,
-        type: 'work',
-        pieces: row.pieces,
-        rate: row.rate,
-        amount: Number(row.pieces) * Number(row.rate),
-        date: row.date
-      });
-    });
-    
-    setBulkRows([{ date: new Date().toISOString().split('T')[0], pieces: '', rate: '' }]);
-    closeSheet();
-    haptic('heavy');
-    fetchTransactions(activeWorker.id);
-  };
-
-  const handleSettle = async (balance) => {
-    try {
-      await settleWorker(activeWorker.id, balance);
-      closeSheet();
-      haptic('heavy');
-      fetchTransactions(activeWorker.id);
-    } catch (err) {
-      haptic('error');
-      alert(`Settlement failed: ${err.message}`);
-    }
-  };
-
-  const calculateBalance = (txs) => {
-    const activeTxs = txs.filter(tx => tx.status === 'active');
-    const work = activeTxs.filter(tx => tx.type === 'work').reduce((sum, tx) => sum + (tx.amount || 0), 0);
-    const advance = activeTxs.filter(tx => tx.type === 'advance').reduce((sum, tx) => sum + (tx.amount || 0), 0);
-    return work - advance;
-  };
-
-  const filteredWorkers = workers.filter(w => w.name.toLowerCase().includes(search.toLowerCase()));
-  const activeTransactions = transactions.filter(tx => tx.status === 'active');
-
+  // --- EARLY RETURNS ---
   if (!user) {
     return <LoginPage username={username} setUsername={setUsername} pin={pin} setPin={setPin} handleLogin={handleLogin} />;
   }
+
+  if (error) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#FAFAFA] p-10 text-center">
+        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6">
+          <AlertTriangle size={32} />
+        </div>
+        <h2 className="text-2xl font-display font-black text-[#111111] mb-2">Connection Issue</h2>
+        <p className="text-sm text-[#111111]/40 max-w-xs mb-8">{error}</p>
+        <button onClick={() => window.location.reload()} className="bg-[#111111] text-white px-8 py-4 rounded-2xl font-bold active:scale-95 transition-all shadow-xl">Try Reconnecting</button>
+      </div>
+    );
+  }
+
+  if (isLoading && !workers.length && !allLots.length) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-white">
+        <motion.div animate={{ scale: [1, 1.1, 1], rotate: [0, 90, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full" />
+        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.4em] text-[#111111]/30 italic">Decrypting Ledger...</p>
+      </div>
+    );
+  }
+
+  // --- MAIN RENDER ---
+  const filteredWorkers = workers.filter(w => w.name.toLowerCase().includes(search.toLowerCase()));
+  const activeTransactions = transactions.filter(tx => tx.status === 'active');
 
   return (
     <>
@@ -345,8 +399,6 @@ function App() {
           )}
         </main>
 
-      {/* MODALS */}
-      
       <WorkerModals 
         isBulkEntryOpen={isBulkEntryOpen} 
         closeSheet={closeSheet} 
