@@ -13,7 +13,7 @@ export const LotDashboard = ({
   const getProgress = (lot) => {
     const processes = (lot.processes && lot.processes.length > 0) 
       ? lot.processes 
-      : (lot.stages || []).map(s => ({ id: s, isDone: false }));
+      : (lot.stages || []).map(s => ({ id: s.toLowerCase().replace(/\s+/g, ''), isDone: false }));
     
     if (processes.length === 0) return 0;
     const done = processes.filter(p => p.isDone).length;
@@ -110,11 +110,19 @@ export const LotDashboard = ({
                     </div>
                     <div className="flex justify-between items-center gap-2 min-w-0">
                       <div className="flex -space-x-2">
-                        {((lot.processes && lot.processes.length > 0) ? lot.processes : (lot.stages || []).map(s => ({ id: s, name: s, isDone: false }))).slice(0, 5).map((p, i) => (
-                          <div key={i} className={`w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-black ${p.isDone ? 'bg-[#D4AF37] text-[#111111] z-10' : 'bg-[#F5F5F5] text-[#111111]/20'}`}>
-                            {p.isDone ? <CheckCircle2 size={10} /> : (p.name || '').charAt(0).toUpperCase()}
-                          </div>
-                        ))}
+                        {(() => {
+                          const processes = (lot.processes && lot.processes.length > 0) ? lot.processes : (lot.stages || []).map(s => ({ id: s.toLowerCase().replace(/\s+/g, ''), name: s, isDone: false }));
+                          const uniqueMap = new Map();
+                          processes.forEach(p => {
+                            const id = (p.id || '').toLowerCase().replace(/\s+/g, '');
+                            if (id && !uniqueMap.has(id)) uniqueMap.set(id, p);
+                          });
+                          return Array.from(uniqueMap.values()).slice(0, 5).map((p, i) => (
+                            <div key={i} className={`w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-black ${p.isDone ? 'bg-[#D4AF37] text-[#111111] z-10' : 'bg-[#F5F5F5] text-[#111111]/20'}`}>
+                              {p.isDone ? <CheckCircle2 size={10} /> : (p.name || '').charAt(0).toUpperCase()}
+                            </div>
+                          ));
+                        })()}
                       </div>
                       <span className="text-[8px] font-black text-[#111111]/40 uppercase flex-shrink-0">{Math.round(getProgress(lot))}% DONE</span>
                     </div>
@@ -173,11 +181,19 @@ export const LotDashboard = ({
                   
                   {/* Desktop Status Dots */}
                   <div className="flex -space-x-2 pt-2">
-                    {((lot.processes && lot.processes.length > 0) ? lot.processes : (lot.stages || []).map(s => ({ id: s, name: s, isDone: false }))).slice(0, 8).map((p, i) => (
-                      <div key={i} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black ${p.isDone ? 'bg-[#D4AF37] text-[#111111] z-10' : 'bg-[#F5F5F5] text-[#111111]/20'}`}>
-                        {p.isDone ? <CheckCircle2 size={12} /> : (p.name || '').charAt(0).toUpperCase()}
-                      </div>
-                    ))}
+                    {(() => {
+                      const processes = (lot.processes && lot.processes.length > 0) ? lot.processes : (lot.stages || []).map(s => ({ id: s.toLowerCase().replace(/\s+/g, ''), name: s, isDone: false }));
+                      const uniqueMap = new Map();
+                      processes.forEach(p => {
+                        const id = (p.id || '').toLowerCase().replace(/\s+/g, '');
+                        if (id && !uniqueMap.has(id)) uniqueMap.set(id, p);
+                      });
+                      return Array.from(uniqueMap.values()).slice(0, 8).map((p, i) => (
+                        <div key={i} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black ${p.isDone ? 'bg-[#D4AF37] text-[#111111] z-10' : 'bg-[#F5F5F5] text-[#111111]/20'}`}>
+                          {p.isDone ? <CheckCircle2 size={12} /> : (p.name || '').charAt(0).toUpperCase()}
+                        </div>
+                      ));
+                    })()}
                   </div>
                 </div>
               </div>
@@ -194,9 +210,9 @@ export const LotDashboard = ({
 
       <button 
         onClick={() => onOpenSheet('/lot/add')} 
-        className="fixed bottom-8 right-8 z-[60] bg-[#111111] text-[#D4AF37] w-18 h-18 rounded-[1.75rem] shadow-premium flex items-center justify-center active:scale-95 hover:scale-105 transition-all border-2 border-[#D4AF37]/20 group"
+        className="fixed bottom-32 right-6 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-premium flex items-center justify-center active:scale-95 hover:scale-105 transition-all border-2 border-[#D4AF37]/20 group"
       >
-        <Plus size={36} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-500" />
+        <Plus size={32} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-500" />
       </button>
     </div>
   );

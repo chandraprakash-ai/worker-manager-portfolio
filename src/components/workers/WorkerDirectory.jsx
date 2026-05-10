@@ -37,7 +37,7 @@ export const WorkerDirectory = ({ search, setSearch, workers, onOpenSheet, onNav
       {/* Floating Action Button */}
       <button 
         onClick={() => onOpenSheet('/add-worker')} 
-        className="fixed bottom-8 right-8 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center active:scale-95 transition-all border-2 border-[#D4AF37]/20"
+        className="fixed bottom-32 right-6 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center active:scale-95 transition-all border-2 border-[#D4AF37]/20"
       >
         <Plus size={32} strokeWidth={3} />
       </button>

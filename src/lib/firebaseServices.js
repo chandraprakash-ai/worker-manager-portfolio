@@ -12,7 +12,8 @@ import {
   orderBy, 
   serverTimestamp,
   writeBatch,
-  increment
+  increment,
+  limit
 } from 'firebase/firestore';
 
 const COLLECTIONS = {
@@ -264,4 +265,25 @@ export const updateInventoryStock = async (itemId, delta, reason, currentStock) 
 
 export const deleteInventoryItem = async (id) => {
   await deleteDoc(doc(db, 'inventory', id));
+};
+
+// --- BACKUPS ---
+
+export const createCloudBackup = async (fullData) => {
+  const backupsCol = collection(db, 'backups');
+  const newBackup = {
+    data: fullData,
+    timestamp: serverTimestamp(),
+    type: 'snapshot'
+  };
+  const docRef = await addDoc(backupsCol, newBackup);
+  return docRef.id;
+};
+
+export const fetchLatestBackup = async () => {
+  const backupsCol = collection(db, 'backups');
+  const q = query(backupsCol, orderBy('timestamp', 'desc'), limit(1));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
 };

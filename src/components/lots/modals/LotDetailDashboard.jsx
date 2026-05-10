@@ -1,8 +1,52 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Tag, Image, Check, X, Pencil, Loader2, Plus } from 'lucide-react';
+import { Tag, Image, Check, X, Pencil, Loader2, Plus, AlertCircle } from 'lucide-react';
 import { BottomSheet } from '../../ui/BottomSheet';
 import { Button } from '../../ui/Button';
+
+const hydrateLotData = (lot) => {
+  if (!lot) return null;
+  
+  // Ensure all stages from the 'stages' array are present in 'processes' without duplicates
+  const existingProcesses = lot.processes || [];
+  const definedStages = lot.stages || [];
+  
+  const processMap = new Map();
+  // 1. Load existing processes into the map, normalizing IDs
+  existingProcesses.forEach(p => {
+    const normalizedId = (p.id || '').toLowerCase().replace(/\s+/g, '');
+    if (normalizedId) processMap.set(normalizedId, { ...p, id: normalizedId });
+  });
+
+  // 2. Ensure all defined stages are represented
+  definedStages.forEach(stageName => {
+    const stageId = stageName.toLowerCase().replace(/\s+/g, '');
+    if (stageId && !processMap.has(stageId)) {
+      processMap.set(stageId, {
+        id: stageId,
+        name: stageName,
+        isDone: false,
+        pieces: 0,
+        billNumber: '',
+        notes: '',
+        pricePerPc: 0,
+        numButtons: 0
+      });
+    }
+  });
+
+  // 3. Final list in the order of definedStages
+  const hydratedProcesses = definedStages.map(stageName => {
+    const stageId = stageName.toLowerCase().replace(/\s+/g, '');
+    return processMap.get(stageId);
+  }).filter(Boolean);
+
+  return { 
+    ...lot, 
+    sizes: lot.sizes || {},
+    processes: hydratedProcesses 
+  };
+};
 
 export const LotDetailDashboard = ({
   isOpen,
@@ -15,65 +59,43 @@ export const LotDetailDashboard = ({
   setPreviewData
 }) => {
   const [collapsedStages, setCollapsedStages] = useState({});
-  // Initialize draftLot with a deep copy of selectedLot and hydrated processes
-  const [draftLot, setDraftLot] = useState(() => {
-    if (!selectedLot) return null;
-    
-    const STAGE_MAP = {
-      screening: 'Screening', embroidery: 'Embroidery', cutting: 'Cutting',
-      stitching: 'Stitching', interlock: 'Interlock', diamond: 'Diamond',
-      button: 'Button', steampress: 'Steam Press', finishing: 'Finishing'
-    };
+  const [validationErrors, setValidationErrors] = useState({});
 
-    // Ensure all stages from the 'stages' array are present in 'processes'
-    const existingProcesses = selectedLot.processes || [];
-    const definedStages = selectedLot.stages || [];
-    
-    // Create a set of IDs for existing processes for quick lookup
-    const existingProcIds = new Set(existingProcesses.map(p => p.id));
-    
-    // Combine existing processes with any missing stages
-    const hydratedProcesses = [
-      ...existingProcesses,
-      ...definedStages
-        .filter(id => !existingProcIds.has(id))
-        .map(id => ({
-          id,
-          name: STAGE_MAP[id] || id.charAt(0).toUpperCase() + id.slice(1),
-          pieces: 0,
-          isDone: false
-        }))
-    ].sort((a, b) => {
-      // Keep the order of definedStages if possible
-      const idxA = definedStages.indexOf(a.id);
-      const idxB = definedStages.indexOf(b.id);
-      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-      return 0;
-    });
-
-    return { 
-      ...selectedLot, 
-      sizes: selectedLot.sizes || {},
-      processes: hydratedProcesses 
-    };
-  });
+  // Initialize draftLot with hydrated data
+  const [draftLot, setDraftLot] = useState(() => hydrateLotData(selectedLot));
 
   const matrixRef = useRef(null);
 
-  // Sync draft if selectedLot changes from outside (only if draft is fresh)
-  React.useEffect(() => {
-    if (selectedLot && (!draftLot || draftLot.id !== selectedLot.id)) {
-      setDraftLot({ 
-        ...selectedLot, 
-        sizes: selectedLot.sizes || {},
-        processes: selectedLot.processes || [] 
-      });
+  // Sync draft if selectedLot changes from outside
+  useEffect(() => {
+    if (selectedLot?.id && selectedLot.id !== draftLot?.id) {
+      setDraftLot(hydrateLotData(selectedLot));
     }
   }, [selectedLot?.id]);
 
   if (!draftLot) return null;
 
   const handleFinalSave = async () => {
+    const errors = {};
+    const totalPcs = Object.values(draftLot.sizes || {}).reduce((acc, val) => acc + (Number(val) || 0), 0);
+    
+    (draftLot.processes || []).forEach((p) => {
+      const pcs = Number(p.pieces) || 0;
+      if (pcs > totalPcs) {
+        errors[p.id] = `${p.name}: Exceeds Lot total (${totalPcs})`;
+      }
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      const firstErrorId = Object.keys(errors)[0];
+      const element = document.getElementById(`proc-${firstErrorId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
     // Sanitize numeric fields before saving
     const sanitizedLot = {
       ...draftLot,
@@ -82,9 +104,9 @@ export const LotDetailDashboard = ({
       ),
       processes: (draftLot.processes || []).map(p => {
         const clean = { ...p };
-        if (clean.pieces !== undefined) clean.pieces = clean.pieces === '' ? 0 : Number(clean.pieces);
-        if (clean.numButtons !== undefined) clean.numButtons = clean.numButtons === '' ? 0 : Number(clean.numButtons);
-        if (clean.pricePerPc !== undefined) clean.pricePerPc = clean.pricePerPc === '' ? 0 : Number(clean.pricePerPc);
+        if (clean.pieces !== undefined) clean.pieces = Number(clean.pieces) || 0;
+        if (clean.numButtons !== undefined) clean.numButtons = Number(clean.numButtons) || 0;
+        if (clean.pricePerPc !== undefined) clean.pricePerPc = Number(clean.pricePerPc) || 0;
         return clean;
       })
     };
@@ -94,10 +116,38 @@ export const LotDetailDashboard = ({
   };
 
   const updateDraft = (updates) => {
+    // Validation for Size Matrix updates
+    if (updates.sizes) {
+      for (const size in updates.sizes) {
+        const val = updates.sizes[size];
+        if (val !== '' && (isNaN(val) || Number(val) < 0)) {
+          alert(`Invalid quantity for size ${size}. Please enter a positive number.`);
+          return;
+        }
+      }
+    }
     setDraftLot(prev => ({ ...prev, ...updates }));
   };
 
   const updateDraftProcess = (procId, updates) => {
+    // Clear error when user starts typing
+    if (validationErrors[procId]) {
+      const newErrors = { ...validationErrors };
+      delete newErrors[procId];
+      setValidationErrors(newErrors);
+    }
+
+    // Validation: For numeric fields, ignore non-numeric or negative inputs
+    const numericKeys = ['pieces', 'numButtons', 'pricePerPc'];
+    for (const key of numericKeys) {
+      if (updates[key] !== undefined && updates[key] !== '') {
+        if (isNaN(updates[key]) || Number(updates[key]) < 0) {
+          alert(`Invalid input for ${key}. Please enter a positive number.`);
+          return;
+        }
+      }
+    }
+    
     setDraftLot(prev => ({
       ...prev,
       processes: (prev.processes || []).map(p => p.id === procId ? { ...p, ...updates } : p)
@@ -204,6 +254,7 @@ export const LotDetailDashboard = ({
                 updateDraftProcess={updateDraftProcess}
                 isCollapsed={collapsedStages[proc.id]}
                 toggleCollapse={() => setCollapsedStages(prev => ({ ...prev, [proc.id]: !prev[proc.id] }))}
+                error={validationErrors[proc.id]}
               />
             ))}
           </div>
@@ -243,14 +294,19 @@ const MediaCard = ({ label, url, onClick }) => (
   </div>
 );
 
-const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isCollapsed, toggleCollapse }) => {
+const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isCollapsed, toggleCollapse, error }) => {
+  const isOverLimit = Number(proc.pieces) > totalLotPcs;
   const prevPcs = idx > 0 ? Number(draftLot.processes[idx-1].pieces || 0) : totalLotPcs;
   const isDeficit = Number(proc.pieces) > 0 && Number(proc.pieces) < prevPcs;
-  const isOverLimit = Number(proc.pieces) > totalLotPcs;
-  const isContractorStage = ['screening', 'embroidery', 'stitching', 'diamond', 'button', 'steampress', 'finishing'].includes(proc.id);
+  const isContractorStage = ['screening', 'embroidery', 'diamond', 'button'].includes(proc.id);
 
   return (
-    <div className={`p-6 rounded-[2.5rem] border transition-all relative ${proc.isDone ? 'bg-green-50/50 border-green-200' : 'bg-white border-[#111111]/5 shadow-premium'}`}>
+    <div id={`proc-${proc.id}`} className={`p-6 rounded-[2.5rem] border transition-all relative ${error ? 'border-red-500 shadow-[0_20px_50px_rgba(239,68,68,0.1)]' : proc.isDone ? 'bg-green-50/50 border-green-200' : 'bg-white border-[#111111]/5 shadow-premium'}`}>
+      {error && (
+        <div className="absolute -top-3 left-10 bg-red-500 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest z-20 shadow-lg flex items-center gap-1.5 animate-bounce">
+          <AlertCircle size={10} strokeWidth={4} /> {error}
+        </div>
+      )}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-5">
           <button 
@@ -265,7 +321,7 @@ const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isC
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <div className={`flex items-center gap-1.5 p-1 rounded-2xl ${isOverLimit ? 'bg-orange-50' : isDeficit ? 'bg-red-50' : 'bg-[#F5F5F5]'}`}>
+          <div className={`flex items-center gap-1.5 p-1 rounded-2xl ${error ? 'bg-red-50 ring-2 ring-red-500/20' : isOverLimit ? 'bg-orange-50' : isDeficit ? 'bg-amber-50' : 'bg-[#F5F5F5]'}`}>
             <span className="text-[11px] font-black ml-3 opacity-40">Pcs</span>
             <input 
               type="number" 
@@ -275,64 +331,84 @@ const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isC
             />
           </div>
           {isOverLimit && <span className="text-[7px] font-black text-orange-600 uppercase">Over Limit</span>}
-          {isDeficit && <span className="text-[7px] font-black text-red-500 uppercase animate-pulse">Deficit</span>}
+          {isDeficit && <span className="text-[7px] font-black text-amber-500 uppercase animate-pulse">Deficit Warning</span>}
         </div>
       </div>
       
       {/* Expanded Logic */}
-      {!isCollapsed && isContractorStage && (
-        <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-[#111111]/5">
-           <div className="space-y-1">
-             <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Bill Reference</span>
-             <input 
-               type="text" 
-               value={proc.billNumber || ''} 
-               onChange={(e) => updateDraftProcess(proc.id, { billNumber: e.target.value })}
-               className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
-               placeholder="Ref #"
-             />
-           </div>
-           
-           <div className="space-y-1">
-             <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Notes</span>
-             <input 
-               type="text" 
-               value={proc.notes || ''} 
-               onChange={(e) => updateDraftProcess(proc.id, { notes: e.target.value })}
-               className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
-               placeholder="Notes..."
-             />
-           </div>
-
-           <div className="col-span-2 grid grid-cols-2 gap-4 pt-2">
-              <div className="space-y-1">
-                <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Rate (₹)</span>
-                <input 
-                  type="number" 
-                  value={proc.pricePerPc || ''} 
-                  onChange={(e) => updateDraftProcess(proc.id, { pricePerPc: e.target.value })}
-                  className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold font-display"
-                  placeholder="0.00"
-                />
-              </div>
-
-              {proc.id === 'button' && (
+      {!isCollapsed && (
+        <div className="mt-6 pt-6 border-t border-[#111111]/5">
+           {/* Screening & Embroidery: Ref & Notes */}
+           {['screening', 'embroidery'].includes(proc.id) && (
+             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Buttons/Pc</span>
+                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Reference ID</span>
+                  <input 
+                    type="text" 
+                    value={proc.billNumber || ''} 
+                    onChange={(e) => updateDraftProcess(proc.id, { billNumber: e.target.value })}
+                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
+                    placeholder="Ref / Bill #"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Observations</span>
+                  <input 
+                    type="text" 
+                    value={proc.notes || ''} 
+                    onChange={(e) => updateDraftProcess(proc.id, { notes: e.target.value })}
+                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
+                    placeholder="Notes..."
+                  />
+                </div>
+             </div>
+           )}
+
+           {/* Diamond: Only Rate */}
+           {proc.id === 'diamond' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Rate (₹)</span>
+                  <input 
+                    type="number" 
+                    value={proc.pricePerPc || ''} 
+                    onChange={(e) => updateDraftProcess(proc.id, { pricePerPc: e.target.value })}
+                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold font-display"
+                    placeholder="₹ 0.00"
+                  />
+                </div>
+              </div>
+           )}
+
+           {/* Button: Hardware & Rate */}
+           {proc.id === 'button' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Hardware / PC</span>
                   <input 
                     type="number" 
                     value={proc.numButtons || ''} 
                     onChange={(e) => updateDraftProcess(proc.id, { numButtons: e.target.value })}
                     className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
-                    placeholder="Buttons"
+                    placeholder="0"
                   />
                 </div>
-              )}
-           </div>
+                <div className="space-y-1">
+                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Rate (₹)</span>
+                  <input 
+                    type="number" 
+                    value={proc.pricePerPc || ''} 
+                    onChange={(e) => updateDraftProcess(proc.id, { pricePerPc: e.target.value })}
+                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold font-display"
+                    placeholder="₹ 0.00"
+                  />
+                </div>
+              </div>
+           )}
         </div>
       )}
 
-      {isContractorStage && (
+      {['screening', 'embroidery', 'diamond', 'button'].includes(proc.id) && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
           <div className={`h-1 rounded-full transition-all duration-500 ${isCollapsed ? 'bg-[#111111]/5 w-8' : 'bg-[#D4AF37]/20 w-12'}`} />
         </div>

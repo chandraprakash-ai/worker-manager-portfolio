@@ -23,7 +23,7 @@ export const BottomSheet = ({ isOpen, onClose, title, children, fullScreen, show
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[140]"
             />
           )}
           
@@ -33,7 +33,7 @@ export const BottomSheet = ({ isOpen, onClose, title, children, fullScreen, show
             animate={fullScreen ? { x: 0 } : { y: 0, opacity: 1 }}
             exit={fullScreen ? { x: '100%' } : { y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-            className={`fixed z-[100] bg-white flex flex-col
+            className={`fixed z-[150] bg-white flex flex-col
               ${fullScreen 
                 ? 'inset-0 h-full w-full' 
                 : 'inset-x-0 bottom-0 md:inset-0 md:m-auto h-fit max-h-[92vh] md:max-h-[85vh] rounded-t-[2.5rem] md:rounded-[3rem] w-full md:w-[90vw] md:max-w-[700px] shadow-2xl overflow-hidden'

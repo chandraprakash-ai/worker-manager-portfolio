@@ -27,19 +27,28 @@ This stores all production batches. We embed the `sizes` and `processes` directl
       "pieces": 450,
       "pricePerPc": 1.5,
       "isDone": true,
-      "notes": "Color adjustment required."
+      "billNumber": "B-1022",       // Reference / Bill #
+      "notes": "Color adjustment required.",
+      "numButtons": 0
     },
     {
       "id": "button",
-      "name": "Button Hook",
-      "pieces": 0,
+      "name": "Button",
+      "pieces": 450,
       "pricePerPc": 0.5,
-      "numButtons": 4,               // Specific to button process
-      "isDone": false
+      "numButtons": 4,               // Hardware per piece
+      "billNumber": "",
+      "isDone": false,
+      "notes": ""
     }
   ],
+  "stages": [                        // The Standard 8-Stage Pipeline
+    "Screening", "Embroidery", "Cutting", "Stitching", 
+    "Interlock", "Diamond", "Button", "Steam Press"
+  ],
   "sampleImage": "https://storage.googleapis.com/.../img.jpg", // Stored in Firebase Storage
-  "notes": "General production anomalies here.",
+  "itemImage": "https://storage.googleapis.com/.../design.jpg",
+  "notes": "General production observations here.",
   "createdAt": "Timestamp",
   "updatedAt": "Timestamp"
 }

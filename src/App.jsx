@@ -25,6 +25,9 @@ import { WorkerModals } from './components/modals/WorkerModals';
 import { InventoryModals } from './components/modals/InventoryModals';
 import { InventoryDashboard } from './components/inventory/InventoryDashboard';
 import { LotModals } from './components/modals/LotModals';
+import { BackupModal } from './components/modals/BackupModal';
+import { PullToRefresh } from './components/ui/PullToRefresh';
+import { FloatingNavbar } from './components/layout/FloatingNavbar';
 
 function App() {
   // --- AUTH STORE ---
@@ -36,10 +39,52 @@ function App() {
   const workers = useDataStore(state => state.workers);
   const allLots = useDataStore(state => state.allLots);
   const allInventory = useDataStore(state => state.allInventory);
+  const allSettlements = useDataStore(state => state.allSettlements);
   const transactions = useDataStore(state => state.transactions);
   const initializeData = useDataStore(state => state.initializeData);
   const isLoading = useDataStore(state => state.isLoading);
   const error = useDataStore(state => state.error);
+
+  // --- AUTOMATED BACKUP LOGIC ---
+  useEffect(() => {
+    const handleAutoBackup = async () => {
+      if (!user || isLoading || workers.length === 0) return;
+
+      try {
+        const latestBackup = await fs.fetchLatestBackup();
+        const now = new Date().getTime();
+        const oneDay = 24 * 60 * 60 * 1000;
+
+        let shouldBackup = false;
+        if (!latestBackup) {
+          shouldBackup = true;
+        } else {
+          const lastTimestamp = latestBackup.timestamp?.seconds * 1000 || 0;
+          if (now - lastTimestamp > oneDay) {
+            shouldBackup = true;
+          }
+        }
+
+        if (shouldBackup) {
+          const allBackupData = {
+            workers: workers,
+            lots: allLots,
+            inventory: allInventory,
+            transactions: transactions,
+            settlements: allSettlements
+          };
+          
+          await fs.createCloudBackup(allBackupData);
+          console.log("✅ Daily Cloud Auto-Backup Created Successfully");
+        }
+      } catch (err) {
+        console.error("❌ Auto-Backup Check Failed:", err);
+      }
+    };
+
+    handleAutoBackup();
+  }, [user, isLoading, workers.length]);
+
   const fetchTransactions = useDataStore(state => state.fetchTransactions);
   const addWorker = useDataStore(state => state.addWorker);
   const updateWorker = useDataStore(state => state.updateWorker);
@@ -97,22 +142,28 @@ function App() {
   const isAddLotOpen = location.pathname.includes('/lot/add');
   const isLotDetailOpen = location.pathname.startsWith('/lot/') && !location.pathname.endsWith('/add');
   const isExtendSizesOpen = location.pathname.endsWith('/add-sizes');
+  const isSystemOpen = location.pathname === '/system';
 
-  const defaultStages = ['screening', 'embroidery', 'cutting', 'stitching', 'interlock', 'diamond', 'button', 'steampress'];
+
+  const INITIAL_STAGES = [
+    'Screening', 
+    'Embroidery', 
+    'Cutting',
+    'Stitching',
+    'Interlock',
+    'Diamond', 
+    'Button', 
+    'Steam Press'
+  ];
+
   const [newLot, setNewLot] = useState({ 
     lotNumber: '', 
     brand: 'KS4U',
     sizes: {}, 
     itemImage: null,
     sampleImage: null,
-    stages: defaultStages,
-    processes: [
-      { id: 'screening', name: 'Screening', pieces: 0, isDone: false },
-      { id: 'embroidery', name: 'Embroidery', pieces: 0, isDone: false },
-      { id: 'diamond', name: 'Diamond', pieces: 0, isDone: false },
-      { id: 'button', name: 'Button', pieces: 0, isDone: false },
-      { id: 'finishing', name: 'Finishing', pieces: 0, isDone: false },
-    ]
+    stages: [],
+    processes: []
   });
 
   // --- EFFECTS ---
@@ -142,6 +193,7 @@ function App() {
 
   const closeSheet = () => {
     navigate(-1);
+    haptic('light');
   };
 
   const handleLogin = async (e) => {
@@ -298,7 +350,25 @@ function App() {
 
   const handleAddLot = async (e, cloudData = null) => {
     if (e) e.preventDefault();
-    const lotToSave = cloudData || newLot;
+    let lotToSave = cloudData || newLot;
+    
+    // Smart Fallback: If no stages selected, use all 8 default
+    if (!lotToSave.stages || lotToSave.stages.length === 0) {
+      lotToSave = {
+        ...lotToSave,
+        stages: INITIAL_STAGES,
+        processes: INITIAL_STAGES.map(s => ({
+          id: s.toLowerCase().replace(/\s+/g, ''),
+          name: s,
+          isDone: false,
+          pieces: 0,
+          billNumber: '',
+          notes: '',
+          pricePerPc: 0,
+          numButtons: 0
+        }))
+      };
+    }
     
     try {
       await addLot(lotToSave);
@@ -310,14 +380,8 @@ function App() {
         sizes: {}, 
         itemImage: null,
         sampleImage: null,
-        notes: '',
-        processes: [
-          { id: 'screening', name: 'Screening', pieces: 0, isDone: false },
-          { id: 'embroidery', name: 'Embroidery', pieces: 0, isDone: false },
-          { id: 'diamond', name: 'Diamond', pieces: 0, isDone: false },
-          { id: 'button', name: 'Button', pieces: 0, isDone: false },
-          { id: 'finishing', name: 'Finishing', pieces: 0, isDone: false },
-        ]
+        stages: [],
+        processes: []
       });
       
       closeSheet();
@@ -363,56 +427,65 @@ function App() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#FAFAFA] pb-32 font-sans no-print text-[#111111]">
-        {isHomePage && <Header onLogout={logout} />}
-
+      <div className="min-h-screen bg-[#FAFAFA] pb-44 font-sans no-print text-[#111111]">
         <main className="px-6 py-8 max-w-7xl mx-auto">
-          {isHomePage && <HomeDashboard navigate={navigate} workers={workers} />}
+          <PullToRefresh onRefresh={initializeData}>
+            {isHomePage && (
+              <HomeDashboard 
+                navigate={navigate} 
+                workers={workers} 
+                lots={allLots}
+                inventory={allInventory}
+                transactions={transactions}
+                onOpenSheet={openSheet}
+              />
+            )}
 
-          {isWorkersPage && !activeWorker && (
-            <WorkerDirectory 
-              search={search} 
-              setSearch={setSearch} 
-              workers={filteredWorkers} 
-              onOpenSheet={openSheet} 
-              onNavigate={navigate} 
-            />
-          )}
+            {isWorkersPage && !activeWorker && (
+              <WorkerDirectory 
+                search={search} 
+                setSearch={setSearch} 
+                workers={filteredWorkers} 
+                onOpenSheet={openSheet} 
+                onNavigate={navigate} 
+              />
+            )}
 
-          {activeWorker && (
-            <WorkerDetail 
-              activeWorker={activeWorker} 
-              transactions={activeTransactions} 
-              calculateBalance={calculateBalance} 
-              onNavigate={navigate} 
-              onOpenSheet={openSheet} 
-              setEditingTx={setEditingTx} 
-              setNewTx={setNewTx} 
-              setNewWorker={setNewWorker}
-              generateInvoicePDF={generateInvoicePDF} 
-            />
-          )}
+            {activeWorker && (
+              <WorkerDetail 
+                activeWorker={activeWorker} 
+                transactions={activeTransactions} 
+                calculateBalance={calculateBalance} 
+                onNavigate={navigate} 
+                onOpenSheet={openSheet} 
+                setEditingTx={setEditingTx} 
+                setNewTx={setNewTx} 
+                setNewWorker={setNewWorker}
+                generateInvoicePDF={generateInvoicePDF} 
+              />
+            )}
 
-          {isInventoryPage && (
-            <InventoryDashboard 
-              search={search} 
-              setSearch={setSearch} 
-              allInventory={allInventory} 
-              onNavigate={navigate} 
-              onOpenSheet={openSheet} 
-              setActiveInvItem={setActiveInvItem} 
-            />
-          )}
+            {isInventoryPage && (
+              <InventoryDashboard 
+                search={search} 
+                setSearch={setSearch} 
+                allInventory={allInventory} 
+                onNavigate={navigate} 
+                onOpenSheet={openSheet} 
+                setActiveInvItem={setActiveInvItem} 
+              />
+            )}
 
-          {isLotPage && (
-            <LotDashboard 
-              search={search} 
-              setSearch={setSearch} 
-              allLots={allLots} 
-              onNavigate={navigate} 
-              onOpenSheet={openSheet} 
-            />
-          )}
+            {isLotPage && (
+              <LotDashboard 
+                search={search} 
+                setSearch={setSearch} 
+                allLots={allLots} 
+                onNavigate={navigate} 
+                onOpenSheet={openSheet} 
+              />
+            )}
+          </PullToRefresh>
         </main>
 
       <WorkerModals 
@@ -475,6 +548,21 @@ function App() {
         onOpenSheet={openSheet}
         onNavigate={navigate}
       />
+
+      <BackupModal 
+        isOpen={isSystemOpen}
+        closeSheet={closeSheet}
+        onLogout={logout}
+        allData={{
+          workers: workers,
+          lots: allLots,
+          inventory: allInventory,
+          transactions: transactions,
+          settlements: allSettlements
+        }}
+      />
+
+      <FloatingNavbar />
       </div>
     </>
   );
