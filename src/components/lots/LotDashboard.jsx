@@ -11,15 +11,20 @@ export const LotDashboard = ({
   onOpenSheet 
 }) => {
   const getProgress = (lot) => {
-    if (!lot.processes || lot.processes.length === 0) return 0;
-    const done = lot.processes.filter(p => p.isDone).length;
-    return (done / lot.processes.length) * 100;
+    const processes = (lot.processes && lot.processes.length > 0) 
+      ? lot.processes 
+      : (lot.stages || []).map(s => ({ id: s, isDone: false }));
+    
+    if (processes.length === 0) return 0;
+    const done = processes.filter(p => p.isDone).length;
+    return (done / processes.length) * 100;
   };
 
   const hasLoss = (lot) => {
-    if (!lot.processes || lot.processes.length < 2) return false;
-    for (let i = 1; i < lot.processes.length; i++) {
-      if (lot.processes[i].pieces > 0 && lot.processes[i].pieces < lot.processes[i-1].pieces) {
+    const processes = lot.processes || [];
+    if (processes.length < 2) return false;
+    for (let i = 1; i < processes.length; i++) {
+      if (processes[i].pieces > 0 && processes[i].pieces < processes[i-1].pieces) {
         return true;
       }
     }
@@ -93,7 +98,7 @@ export const LotDashboard = ({
                     <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
                       {Object.entries(lot.sizes || {}).map(([size, qty]) => (
                         <div key={size} className="flex-shrink-0 bg-[#F5F5F5] px-2 py-1 rounded-lg min-w-[32px] text-center">
-                          <p className="text-[7px] font-black text-[#111111]/30 uppercase">{size}</p>
+                          <p className="text-[7px] font-black text-[#111111]/40 uppercase">{size}</p>
                           <p className="text-[10px] font-bold text-[#111111]">{qty}</p>
                         </div>
                       ))}
@@ -105,9 +110,9 @@ export const LotDashboard = ({
                     </div>
                     <div className="flex justify-between items-center gap-2 min-w-0">
                       <div className="flex -space-x-2">
-                        {(lot.processes || []).slice(0, 5).map((p, i) => (
+                        {((lot.processes && lot.processes.length > 0) ? lot.processes : (lot.stages || []).map(s => ({ id: s, name: s, isDone: false }))).slice(0, 5).map((p, i) => (
                           <div key={i} className={`w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[7px] font-black ${p.isDone ? 'bg-[#D4AF37] text-[#111111] z-10' : 'bg-[#F5F5F5] text-[#111111]/20'}`}>
-                            {p.isDone ? <CheckCircle2 size={10} /> : (p.name || '').charAt(0)}
+                            {p.isDone ? <CheckCircle2 size={10} /> : (p.name || '').charAt(0).toUpperCase()}
                           </div>
                         ))}
                       </div>
@@ -165,13 +170,21 @@ export const LotDashboard = ({
                   <div className="h-1.5 w-full bg-[#F5F5F5] rounded-full overflow-hidden">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${getProgress(lot)}%` }} className="h-full bg-[#111111] rounded-full" />
                   </div>
+                  
+                  {/* Desktop Status Dots */}
+                  <div className="flex -space-x-2 pt-2">
+                    {((lot.processes && lot.processes.length > 0) ? lot.processes : (lot.stages || []).map(s => ({ id: s, name: s, isDone: false }))).slice(0, 8).map((p, i) => (
+                      <div key={i} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black ${p.isDone ? 'bg-[#D4AF37] text-[#111111] z-10' : 'bg-[#F5F5F5] text-[#111111]/20'}`}>
+                        {p.isDone ? <CheckCircle2 size={12} /> : (p.name || '').charAt(0).toUpperCase()}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>
           </React.Fragment>
         ))}
       </div>
-
       {allLots.length === 0 && (
         <div className="text-center py-40 border-2 border-dashed border-[#111111]/5 rounded-[3rem]">
           <ClipboardList size={80} strokeWidth={0.5} className="mx-auto mb-6 text-[#111111]/10" />

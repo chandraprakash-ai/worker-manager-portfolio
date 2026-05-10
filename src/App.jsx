@@ -105,7 +105,14 @@ function App() {
     sizes: {}, 
     itemImage: null,
     sampleImage: null,
-    stages: defaultStages
+    stages: defaultStages,
+    processes: [
+      { id: 'screening', name: 'Screening', pieces: 0, isDone: false },
+      { id: 'embroidery', name: 'Embroidery', pieces: 0, isDone: false },
+      { id: 'diamond', name: 'Diamond', pieces: 0, isDone: false },
+      { id: 'button', name: 'Button', pieces: 0, isDone: false },
+      { id: 'finishing', name: 'Finishing', pieces: 0, isDone: false },
+    ]
   });
 
   // --- EFFECTS ---
@@ -289,27 +296,36 @@ function App() {
     haptic('medium');
   };
 
-  const handleAddLot = (e, cloudData = null) => {
+  const handleAddLot = async (e, cloudData = null) => {
     if (e) e.preventDefault();
     const lotToSave = cloudData || newLot;
-    addLot(lotToSave);
-    setNewLot({ 
-      lotNumber: '', 
-      brand: 'KS4U',
-      sizes: {}, 
-      itemImage: null,
-      sampleImage: null,
-      notes: '',
-      processes: [
-        { id: 'screening', name: 'Screening', pieces: 0, isDone: false },
-        { id: 'embroidery', name: 'Embroidery', pieces: 0, isDone: false },
-        { id: 'diamond', name: 'Diamond', pieces: 0, isDone: false },
-        { id: 'button', name: 'Button', pieces: 0, isDone: false },
-        { id: 'finishing', name: 'Finishing', pieces: 0, isDone: false },
-      ]
-    });
-    closeSheet();
-    haptic('medium');
+    
+    try {
+      await addLot(lotToSave);
+      
+      // Reset state only AFTER successful save
+      setNewLot({ 
+        lotNumber: '', 
+        brand: 'KS4U',
+        sizes: {}, 
+        itemImage: null,
+        sampleImage: null,
+        notes: '',
+        processes: [
+          { id: 'screening', name: 'Screening', pieces: 0, isDone: false },
+          { id: 'embroidery', name: 'Embroidery', pieces: 0, isDone: false },
+          { id: 'diamond', name: 'Diamond', pieces: 0, isDone: false },
+          { id: 'button', name: 'Button', pieces: 0, isDone: false },
+          { id: 'finishing', name: 'Finishing', pieces: 0, isDone: false },
+        ]
+      });
+      
+      closeSheet();
+      haptic('medium');
+    } catch (err) {
+      console.error("Failed to add lot:", err);
+      // Local error handling would usually happen in the Modal component
+    }
   };
 
 

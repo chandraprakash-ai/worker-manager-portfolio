@@ -141,18 +141,32 @@ export const LotInitializationSheet = ({
                  { id: 'interlock', name: 'Interlock' },
                  { id: 'diamond', name: 'Diamond' },
                  { id: 'button', name: 'Button' },
-                 { id: 'steampress', name: 'Steam Press' }
+                 { id: 'steampress', name: 'Steam Press' },
+                 { id: 'finishing', name: 'Finishing' }
                ].map(stage => (
                  <button
                    key={stage.id}
                    type="button"
-                   onClick={() => {
-                     const current = newLot.stages || [];
-                     const updated = current.includes(stage.id) 
-                       ? current.filter(id => id !== stage.id) 
-                       : [...current, stage.id];
-                     setNewLot({ ...newLot, stages: updated });
-                   }}
+                    onClick={() => {
+                      const STAGE_NAMES = {
+                        screening: "Screening", embroidery: "Embroidery", cutting: "Cutting",
+                        stitching: "Stitching", interlock: "Interlock", diamond: "Diamond",
+                        button: "Button", steampress: "Steam Press", finishing: "Finishing"
+                      };
+                      const currentStages = newLot.stages || [];
+                      const updatedStages = currentStages.includes(stage.id) 
+                        ? currentStages.filter(id => id !== stage.id) 
+                        : [...currentStages, stage.id];
+                      
+                      const updatedProcesses = updatedStages.map(id => ({
+                        id,
+                        name: STAGE_NAMES[id] || id.charAt(0).toUpperCase() + id.slice(1),
+                        pieces: 0,
+                        isDone: false
+                      }));
+
+                      setNewLot({ ...newLot, stages: updatedStages, processes: updatedProcesses });
+                    }}
                    className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${newLot.stages.includes(stage.id) ? 'bg-[#111111] border-[#111111] text-[#D4AF37]' : 'bg-white border-[#F5F5F5] text-[#111111]/30'}`}
                  >
                    <div className={`w-2 h-2 rounded-full ${newLot.stages.includes(stage.id) ? 'bg-[#D4AF37]' : 'bg-[#111111]/10'}`} />

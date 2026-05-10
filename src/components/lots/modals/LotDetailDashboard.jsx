@@ -25,14 +25,37 @@ export const LotDetailDashboard = ({
       button: 'Button', steampress: 'Steam Press', finishing: 'Finishing'
     };
 
-    const hydratedProcesses = selectedLot.processes || (selectedLot.stages || []).map(id => ({
-      id,
-      name: STAGE_MAP[id] || id.charAt(0).toUpperCase() + id.slice(1),
-      pieces: 0,
-      isDone: false
-    }));
+    // Ensure all stages from the 'stages' array are present in 'processes'
+    const existingProcesses = selectedLot.processes || [];
+    const definedStages = selectedLot.stages || [];
+    
+    // Create a set of IDs for existing processes for quick lookup
+    const existingProcIds = new Set(existingProcesses.map(p => p.id));
+    
+    // Combine existing processes with any missing stages
+    const hydratedProcesses = [
+      ...existingProcesses,
+      ...definedStages
+        .filter(id => !existingProcIds.has(id))
+        .map(id => ({
+          id,
+          name: STAGE_MAP[id] || id.charAt(0).toUpperCase() + id.slice(1),
+          pieces: 0,
+          isDone: false
+        }))
+    ].sort((a, b) => {
+      // Keep the order of definedStages if possible
+      const idxA = definedStages.indexOf(a.id);
+      const idxB = definedStages.indexOf(b.id);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      return 0;
+    });
 
-    return { ...selectedLot, processes: hydratedProcesses };
+    return { 
+      ...selectedLot, 
+      sizes: selectedLot.sizes || {},
+      processes: hydratedProcesses 
+    };
   });
 
   const matrixRef = useRef(null);
@@ -40,7 +63,11 @@ export const LotDetailDashboard = ({
   // Sync draft if selectedLot changes from outside (only if draft is fresh)
   React.useEffect(() => {
     if (selectedLot && (!draftLot || draftLot.id !== selectedLot.id)) {
-      setDraftLot({ ...selectedLot, processes: selectedLot.processes || [] });
+      setDraftLot({ 
+        ...selectedLot, 
+        sizes: selectedLot.sizes || {},
+        processes: selectedLot.processes || [] 
+      });
     }
   }, [selectedLot?.id]);
 
@@ -51,14 +78,15 @@ export const LotDetailDashboard = ({
     const sanitizedLot = {
       ...draftLot,
       sizes: Object.fromEntries(
-        Object.entries(draftLot.sizes).map(([s, q]) => [s, Number(q) || 0])
+        Object.entries(draftLot.sizes || {}).map(([s, q]) => [s, Number(q) || 0])
       ),
-      processes: draftLot.processes.map(p => ({
-        ...p,
-        pieces: p.pieces === '' ? 0 : Number(p.pieces),
-        numButtons: p.numButtons === '' ? 0 : Number(p.numButtons),
-        pricePerPc: p.pricePerPc === '' ? 0 : Number(p.pricePerPc)
-      }))
+      processes: (draftLot.processes || []).map(p => {
+        const clean = { ...p };
+        if (clean.pieces !== undefined) clean.pieces = clean.pieces === '' ? 0 : Number(clean.pieces);
+        if (clean.numButtons !== undefined) clean.numButtons = clean.numButtons === '' ? 0 : Number(clean.numButtons);
+        if (clean.pricePerPc !== undefined) clean.pricePerPc = clean.pricePerPc === '' ? 0 : Number(clean.pricePerPc);
+        return clean;
+      })
     };
 
     await onUpdateLot(selectedLot.id, sanitizedLot);
@@ -72,10 +100,10 @@ export const LotDetailDashboard = ({
   const updateDraftProcess = (procId, updates) => {
     setDraftLot(prev => ({
       ...prev,
-      processes: prev.processes.map(p => p.id === procId ? { ...p, ...updates } : p)
+      processes: (prev.processes || []).map(p => p.id === procId ? { ...p, ...updates } : p)
     }));
   };
-  const totalLotPcs = Object.values(draftLot.sizes).reduce((acc, val) => acc + (Number(val) || 0), 0);
+  const totalLotPcs = Object.values(draftLot.sizes || {}).reduce((acc, val) => acc + (Number(val) || 0), 0);
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} onBack={onClose} title="Lot Dashboard" fullScreen>
