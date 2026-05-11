@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Pencil, Check, Loader2 } from 'lucide-react';
+import { ConfirmModal } from '../../ui/ConfirmModal';
 
 export const LotMediaPreview = ({
   previewData,
@@ -16,15 +17,13 @@ export const LotMediaPreview = ({
   sampleInputRef,
   fs
 }) => {
+  const [showDiscardConfirm, setShowDiscardConfirm] = React.useState(false);
+
   if (!previewData) return null;
 
   const handleClose = () => {
     if (Object.keys(pendingFiles).length > 0) {
-      if (confirm('Discard unsaved changes?')) {
-        setPreviewData(null);
-        setPreviews({});
-        setPendingFiles({});
-      }
+      setShowDiscardConfirm(true);
     } else {
       setPreviewData(null);
     }
@@ -87,6 +86,21 @@ export const LotMediaPreview = ({
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showDiscardConfirm}
+        title="Discard Changes"
+        message="Are you sure you want to discard your unsaved image edits?"
+        onConfirm={() => {
+          setShowDiscardConfirm(false);
+          setPreviewData(null);
+          setPreviews({});
+          setPendingFiles({});
+        }}
+        onCancel={() => setShowDiscardConfirm(false)}
+        confirmText="Discard"
+        cancelText="Keep Editing"
+      />
     </div>
   );
 };

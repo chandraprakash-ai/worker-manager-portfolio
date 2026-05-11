@@ -120,6 +120,11 @@ export const updateWorker = async (id, updates) => {
   return updates;
 };
 
+export const deleteWorker = async (id) => {
+  const workerRef = doc(db, COLLECTIONS.WORKERS, id);
+  await deleteDoc(workerRef);
+};
+
 // --- TRANSACTIONS ---
 
 export const fetchTransactions = async (workerId = null) => {

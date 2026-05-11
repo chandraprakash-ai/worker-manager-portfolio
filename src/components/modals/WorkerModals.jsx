@@ -3,18 +3,21 @@ import { X, Plus, CheckCircle2, IndianRupee, ArrowLeft, FileText } from 'lucide-
 import { motion } from 'framer-motion';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
+import { ConfirmModal } from '../ui/ConfirmModal';
 import { useTranslation } from 'react-i18next';
 
 export const WorkerModals = ({ 
   isBulkEntryOpen, closeSheet, bulkRows, setBulkRows, handleBulkSubmit,
   isHistoryOpen, viewingSettlement, setViewingSettlement, getSettlements, activeWorker, getSettlementTransactions, generateInvoicePDF,
-  isAddWorkerOpen, isEditWorkerOpen, handleAddWorker, handleUpdateWorker, newWorker, setNewWorker,
+  isAddWorkerOpen, isEditWorkerOpen, handleAddWorker, handleUpdateWorker, handleDeleteWorker, newWorker, setNewWorker,
   isEditTxOpen, editingTx, newTx, setNewTx, handleUpdateTransaction, deleteTransaction,
   isSettlementOpen, calculateBalance, transactions, handleSettle, activeTransactions
 }) => {
   const { t, i18n } = useTranslation();
   const isHindi = i18n?.language === 'hi';
   const [localError, setLocalError] = React.useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  const [showDeleteTxConfirm, setShowDeleteTxConfirm] = React.useState(false);
 
   const localSubmit = () => {
     const incompleteIdx = bulkRows.findIndex(r => (r.pieces || r.rate) && (!r.pieces || !r.rate || Number(r.pieces) <= 0 || Number(r.rate) <= 0));
@@ -261,9 +264,27 @@ export const WorkerModals = ({
             <label className={`block font-black text-[#111111]/30 uppercase mb-3 ml-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[10px] tracking-[0.2em]'}`}>{t('workers.residential_address')}</label>
             <textarea value={newWorker.address} onChange={(e) => setNewWorker({ ...newWorker, address: e.target.value })} className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold min-h-[120px]" placeholder={t('workers.address_placeholder')} />
           </div>
-          <button type="submit" className={`w-full bg-green-600 text-white py-6 rounded-2xl font-black uppercase shadow-premium active:scale-95 transition-all hover:bg-green-700 ${isHindi ? 'tracking-normal text-sm' : 'tracking-widest'}`}>{t('workers.update_profile')}</button>
+          <div className="space-y-4 pt-4">
+             {activeWorker && (
+               <button type="button" onClick={() => setShowDeleteConfirm(true)} className={`w-full text-red-500 font-bold uppercase py-2 ${isHindi ? 'text-sm tracking-normal' : 'text-xs tracking-widest'}`}>{t('workers.remove_record', 'Delete Worker')}</button>
+             )}
+             <button type="submit" className={`w-full bg-green-600 text-white py-6 rounded-2xl font-black uppercase shadow-premium active:scale-95 transition-all hover:bg-green-700 ${isHindi ? 'tracking-normal text-sm' : 'tracking-widest'}`}>{t('workers.update_profile')}</button>
+          </div>
         </form>
       </BottomSheet>
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title={t('workers.delete_confirm_title', 'Delete Worker')}
+        message={t('workers.delete_confirm_message', 'Are you sure you want to permanently delete this worker? All their history and transactions will be lost. This cannot be undone.')}
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          handleDeleteWorker(activeWorker.id);
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+        confirmText={t('workers.remove_record', 'Delete')}
+        cancelText={t('common.cancel', 'Cancel')}
+      />
 
       {/* Add/Edit Transaction Sheet */}
       <BottomSheet isOpen={isEditTxOpen} onClose={closeSheet} title={editingTx ? t('workers.update_ledger') : t('workers.new_entry')}>
@@ -319,7 +340,7 @@ export const WorkerModals = ({
 
           <div className="pt-4 space-y-4">
             {editingTx && (
-              <button type="button" onClick={() => { if(confirm('Delete this entry?')) { deleteTransaction(editingTx.id); closeSheet(); } }} className={`w-full text-red-500 font-bold uppercase py-2 ${isHindi ? 'text-sm tracking-normal' : 'text-xs tracking-widest'}`}>{t('workers.remove_record')}</button>
+              <button type="button" onClick={() => setShowDeleteTxConfirm(true)} className={`w-full text-red-500 font-bold uppercase py-2 ${isHindi ? 'text-sm tracking-normal' : 'text-xs tracking-widest'}`}>{t('workers.remove_record')}</button>
             )}
             <button type="submit" className={`w-full text-white py-6 rounded-2xl font-black uppercase shadow-premium active:scale-95 transition-all ${newTx.type === 'work' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} ${isHindi ? 'text-sm tracking-normal' : 'tracking-widest'}`}>
               {editingTx ? t('workers.update_entry') : t('workers.commit_record')}
@@ -327,6 +348,20 @@ export const WorkerModals = ({
           </div>
         </form>
       </BottomSheet>
+
+      <ConfirmModal
+        isOpen={showDeleteTxConfirm}
+        title={t('workers.delete_entry_title', 'Delete Entry')}
+        message={t('workers.delete_entry_confirm', 'Are you sure you want to delete this entry? This will update the ledger and cannot be undone.')}
+        onConfirm={() => {
+          setShowDeleteTxConfirm(false);
+          deleteTransaction(editingTx.id);
+          closeSheet();
+        }}
+        onCancel={() => setShowDeleteTxConfirm(false)}
+        confirmText={t('workers.remove_record', 'Delete')}
+        cancelText={t('common.cancel', 'Cancel')}
+      />
 
       {/* Settlement Sheet */}
       <BottomSheet isOpen={isSettlementOpen} onClose={closeSheet} title={t('workers.worker_settlement')}>

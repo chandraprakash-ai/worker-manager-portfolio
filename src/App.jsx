@@ -91,6 +91,7 @@ function App() {
   const fetchTransactions = useDataStore(state => state.fetchTransactions);
   const addWorker = useDataStore(state => state.addWorker);
   const updateWorker = useDataStore(state => state.updateWorker);
+  const deleteWorker = useDataStore(state => state.deleteWorker);
   const addTransaction = useDataStore(state => state.addTransaction);
   const settleWorker = useDataStore(state => state.settleWorker);
   const addLot = useDataStore(state => state.addLot);
@@ -229,6 +230,13 @@ function App() {
     haptic('medium');
   };
 
+  const handleDeleteWorker = async (id) => {
+    await deleteWorker(id);
+    closeSheet();
+    navigate('/workers');
+    haptic('heavy');
+  };
+
   const handleSubmitTransaction = (e) => {
     e.preventDefault();
     const pieces = Number(newTx.pieces) || 0;
@@ -265,10 +273,8 @@ function App() {
 };
 
   const handleDeleteTx = async (id) => {
-    if (confirm("Are you sure you want to delete this entry?")) {
-      await deleteTransaction(id);
-      haptic('medium');
-    }
+    await deleteTransaction(id);
+    haptic('medium');
   };
 
   const handleBulkSubmit = async () => {
@@ -558,6 +564,7 @@ function App() {
         isEditWorkerOpen={isEditWorkerOpen}
         handleAddWorker={handleAddWorker} 
         handleUpdateWorker={handleUpdateWorker}
+        handleDeleteWorker={handleDeleteWorker}
         newWorker={newWorker} 
         setNewWorker={setNewWorker}
         isEditTxOpen={isEditTxOpen} 

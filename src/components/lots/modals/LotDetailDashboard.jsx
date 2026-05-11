@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Tag, Image, Check, X, Pencil, Loader2, Plus, AlertCircle } from 'lucide-react';
 import { BottomSheet } from '../../ui/BottomSheet';
 import { Button } from '../../ui/Button';
+import { ConfirmModal } from '../../ui/ConfirmModal';
 
 const hydrateLotData = (lot) => {
   if (!lot) return null;
@@ -61,6 +62,8 @@ export const LotDetailDashboard = ({
 }) => {
   const [collapsedStages, setCollapsedStages] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [sizeToDelete, setSizeToDelete] = useState(null);
   const { t, i18n } = useTranslation();
   const isHindi = i18n?.language === 'hi';
 
@@ -208,7 +211,7 @@ export const LotDetailDashboard = ({
             {Object.entries(draftLot.sizes).map(([size, qty]) => (
               <div key={size} className="bg-white border border-[#111111]/5 p-4 rounded-2xl shadow-sm flex flex-col items-center justify-center relative group transition-all hover:border-[#D4AF37]/30">
                 <button 
-                  onClick={() => confirm(`${t('lots.remove_size_prompt')} ${size}?`) && updateDraft({ sizes: Object.fromEntries(Object.entries(draftLot.sizes).filter(([s]) => s !== size)) })}
+                  onClick={() => setSizeToDelete(size)}
                   className="absolute top-2 right-2 w-6 h-6 bg-[#F5F5F5] rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
                 >
                   <X size={10} />
@@ -275,11 +278,38 @@ export const LotDetailDashboard = ({
             />
           </div>
           <div className="flex flex-col justify-end gap-4">
-            <Button variant="danger" onClick={() => confirm(t('lots.delete_lot_prompt')) && onDeleteLot(draftLot.id)}>{t('lots.delete_lot')}</Button>
+            <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>{t('lots.delete_lot')}</Button>
             <Button variant="primary" onClick={handleFinalSave}>{t('lots.save_close')}</Button>
           </div>
         </div>
       </div>
+      
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title={t('lots.delete_confirm_title', 'Delete Lot')}
+        message={t('lots.delete_lot_prompt')}
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          onDeleteLot(draftLot.id);
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+        confirmText={t('lots.delete_lot', 'Delete')}
+        cancelText={t('common.cancel', 'Cancel')}
+      />
+
+      <ConfirmModal
+        isOpen={!!sizeToDelete}
+        title={t('lots.remove_size_title', 'Remove Size')}
+        message={`${t('lots.remove_size_prompt')} ${sizeToDelete}?`}
+        onConfirm={() => {
+          updateDraft({ sizes: Object.fromEntries(Object.entries(draftLot.sizes).filter(([s]) => s !== sizeToDelete)) });
+          setSizeToDelete(null);
+        }}
+        onCancel={() => setSizeToDelete(null)}
+        confirmText={t('common.remove', 'Remove')}
+        cancelText={t('common.cancel', 'Cancel')}
+      />
+
     </BottomSheet>
   );
 };

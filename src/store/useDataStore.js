@@ -89,6 +89,20 @@ export const useDataStore = create(
       }
     },
 
+    deleteWorker: async (workerId) => {
+      set({ isLoading: true });
+      try {
+        await fs.deleteWorker(workerId);
+        set(state => ({
+          allWorkers: state.allWorkers.filter(w => w.id !== workerId),
+          workers: state.workers.filter(w => w.id !== workerId),
+          isLoading: false
+        }));
+      } catch (err) {
+        set({ error: err.message, isLoading: false });
+      }
+    },
+
     fetchTransactions: async (workerId, settlementId = null) => {
       set({ isLoading: true });
       try {
