@@ -208,12 +208,6 @@ export const LotDashboard = ({
         </div>
       )}
 
-      <button 
-        onClick={() => onOpenSheet('/lot/add')} 
-        className="fixed bottom-32 right-6 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-premium flex items-center justify-center active:scale-95 hover:scale-105 transition-all border-2 border-[#D4AF37]/20 group"
-      >
-        <Plus size={32} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-500" />
-      </button>
     </div>
   );
 };

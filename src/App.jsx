@@ -562,6 +562,33 @@ function App() {
         }}
       />
 
+      {/* Anchored FABs (Outside PullToRefresh to prevent jumping) */}
+      <AnimatePresence>
+        {isWorkersPage && !activeWorker && !isAddWorkerOpen && !isSystemOpen && (
+          <motion.button 
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            onClick={() => openSheet('/add-worker')} 
+            className="fixed bottom-32 right-6 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center active:scale-95 transition-all border-2 border-[#D4AF37]/20"
+          >
+            <Plus size={32} strokeWidth={3} />
+          </motion.button>
+        )}
+
+        {isLotPage && !isLotDetailOpen && !isAddLotOpen && !isSystemOpen && (
+          <motion.button 
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            onClick={() => openSheet('/lot/add')} 
+            className="fixed bottom-32 right-6 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-premium flex items-center justify-center active:scale-95 hover:scale-105 transition-all border-2 border-[#D4AF37]/20 group"
+          >
+            <Plus size={32} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-500" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       <FloatingNavbar />
       </div>
     </>
