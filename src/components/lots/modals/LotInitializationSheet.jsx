@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Camera, Image, Check, Tag, Loader2 } from 'lucide-react';
 import { BottomSheet } from '../../ui/BottomSheet';
 import { Button } from '../../ui/Button';
@@ -14,6 +15,8 @@ export const LotInitializationSheet = ({
   validateAndSubmit,
   localError
 }) => {
+  const { t, i18n } = useTranslation();
+  const isHindi = i18n?.language === 'hi';
   const designInputRef = useRef(null);
   const sampleInputRef = useRef(null);
   const allAvailableSizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
@@ -31,13 +34,37 @@ export const LotInitializationSheet = ({
 
   const totalPcs = Object.values(newLot.sizes).reduce((a, b) => Number(a) + Number(b), 0);
 
+  useEffect(() => {
+    if (isOpen && (!newLot.stages || newLot.stages.length === 0)) {
+      const allStages = ['screening', 'embroidery', 'cutting', 'stitching', 'interlock', 'diamond', 'button', 'steampress', 'finishing'];
+      const STAGE_NAMES = {
+        screening: "Screening", embroidery: "Embroidery", cutting: "Cutting",
+        stitching: "Stitching", interlock: "Interlock", diamond: "Diamond",
+        button: "Button", steampress: "Steam Press", finishing: "Finishing"
+      };
+      
+      const updatedProcesses = allStages.map(id => ({
+        id,
+        name: STAGE_NAMES[id],
+        pieces: 0,
+        isDone: false
+      }));
+
+      setNewLot(prev => ({ 
+        ...prev, 
+        stages: allStages,
+        processes: updatedProcesses
+      }));
+    }
+  }, [isOpen]);
+
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Initialize Production Lot">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title={t('lots.add_lot')}>
       <form onSubmit={validateAndSubmit} className="space-y-8 pb-10">
         <div className="space-y-6">
           {/* Brand Selection */}
           <div>
-            <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-widest mb-3 ml-1">Select Brand / Label</label>
+            <label className={`block font-black text-[#111111]/30 uppercase mb-3 ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.select_brand')}</label>
             <div className="grid grid-cols-2 gap-3 p-1.5 bg-[#F5F5F5] rounded-[1.5rem]">
               {['KS4U', 'RKT'].map(b => (
                 <button
@@ -55,7 +82,7 @@ export const LotInitializationSheet = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-widest mb-3 ml-1">Lot / Batch ID</label>
+                <label className={`block font-black text-[#111111]/30 uppercase mb-3 ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.lot_batch_id')}</label>
                 <input 
                   type="text" 
                   required 
@@ -67,7 +94,7 @@ export const LotInitializationSheet = ({
               </div>
 
               <div className="space-y-3">
-                <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-widest mb-1 ml-1">Select Sizes</label>
+                <label className={`block font-black text-[#111111]/30 uppercase mb-1 ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.select_sizes')}</label>
                 <div className="flex flex-wrap gap-2">
                   {allAvailableSizes.map(size => (
                     <button 
@@ -100,20 +127,20 @@ export const LotInitializationSheet = ({
                     <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
                       <Check size={20} className="text-[#D4AF37]" />
                     </div>
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest">Update Design</p>
+                    <p className={`font-black text-white uppercase ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.update_design')}</p>
                   </div>
                 </>
               ) : (
                 <>
                   <Camera size={32} className="text-[#D4AF37] mb-2 group-hover:scale-110 transition-transform" />
-                  <p className="text-[10px] font-black text-white/40 uppercase tracking-widest px-4">Add Design</p>
+                  <p className={`font-black text-white/40 uppercase px-4 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.add_design')}</p>
                 </>
               )}
             </div>
           </div>
           
           <div className="space-y-4">
-             <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Production Quantities</label>
+             <label className={`block font-black text-[#111111]/30 uppercase ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.production_quantities')}</label>
              <div className="grid grid-cols-4 gap-3">
                {activeSizes.map(size => (
                  <div key={size} className="bg-white border border-surface-100 p-3 rounded-2xl shadow-sm">
@@ -131,7 +158,7 @@ export const LotInitializationSheet = ({
           </div>
 
           <div className="space-y-4">
-             <label className="block text-[10px] font-black text-[#111111]/30 uppercase tracking-widest ml-1">Production Workflow</label>
+             <label className={`block font-black text-[#111111]/30 uppercase ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.production_workflow')}</label>
              <div className="grid grid-cols-2 gap-2">
                {[
                  { id: 'screening', name: 'Screening' },
@@ -170,7 +197,7 @@ export const LotInitializationSheet = ({
                    className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${newLot.stages.includes(stage.id) ? 'bg-[#111111] border-[#111111] text-[#D4AF37]' : 'bg-white border-[#F5F5F5] text-[#111111]/30'}`}
                  >
                    <div className={`w-2 h-2 rounded-full ${newLot.stages.includes(stage.id) ? 'bg-[#D4AF37]' : 'bg-[#111111]/10'}`} />
-                   <span className="text-[10px] font-black uppercase tracking-widest">{stage.name}</span>
+                   <span className={`font-black uppercase ${isHindi ? 'text-[11px] tracking-normal' : 'text-[10px] tracking-widest'}`}>{t(`stages.${stage.id}`)}</span>
                  </button>
                ))}
              </div>
@@ -184,12 +211,12 @@ export const LotInitializationSheet = ({
             {(previews.sampleImage || newLot.sampleImage) ? (
               <>
                 <img src={previews.sampleImage || newLot.sampleImage} className="absolute inset-0 w-full h-full object-cover opacity-60" />
-                <p className="relative z-10 text-[10px] font-black text-[#111111] uppercase tracking-widest">Change Sample</p>
+                <p className={`relative z-10 font-black text-[#111111] uppercase ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.change_sample')}</p>
               </>
             ) : (
               <>
                 <Image size={32} className="text-[#111111]/10 mb-2" />
-                <p className="text-[10px] font-black text-[#111111]/30 uppercase tracking-widest">Attach Sample Photo</p>
+                <p className={`font-black text-[#111111]/30 uppercase ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.attach_sample')}</p>
               </>
             )}
           </div>
@@ -197,8 +224,8 @@ export const LotInitializationSheet = ({
           <div className="bg-[#111111] text-[#D4AF37] p-6 rounded-[2rem] shadow-premium">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Planned Production</p>
-                <h4 className="text-3xl font-display font-bold">{totalPcs} Pcs</h4>
+                <p className={`font-black uppercase opacity-40 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.planned_production')}</p>
+                <h4 className="text-3xl font-display font-bold">{totalPcs} {t('lots.pcs')}</h4>
               </div>
               <Tag size={24} />
             </div>
@@ -207,7 +234,7 @@ export const LotInitializationSheet = ({
           {localError && (
             <p className="text-center text-xs font-black text-red-500 uppercase tracking-widest animate-pulse">{localError}</p>
           )}
-          <Button fullWidth variant="primary" size="lg" type="submit">Initialize Production Cycle</Button>
+          <Button fullWidth variant="primary" size="lg" type="submit">{t('lots.init_cycle')}</Button>
         </div>
       </form>
     </BottomSheet>

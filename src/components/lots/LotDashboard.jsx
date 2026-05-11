@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Layout, ClipboardList, Plus, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { SearchBar } from '../ui/SearchBar';
@@ -10,6 +11,9 @@ export const LotDashboard = ({
   onNavigate, 
   onOpenSheet 
 }) => {
+  const { t, i18n } = useTranslation();
+  const isHindi = i18n?.language === 'hi';
+
   const getProgress = (lot) => {
     const processes = (lot.processes && lot.processes.length > 0) 
       ? lot.processes 
@@ -35,14 +39,13 @@ export const LotDashboard = ({
     <div className="space-y-6 lg:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 max-w-[1600px] mx-auto px-1 md:px-0">
       {/* Responsive Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <button onClick={() => onNavigate('/')} className="text-[#111111]/40 hover:text-[#111111] transition-colors active:scale-90"><ArrowLeft size={24} /></button>
-          <h2 className="text-xl md:text-3xl text-[#111111] font-display font-black tracking-tight leading-none">Lot Production</h2>
+        <div className="flex flex-col mb-2 gap-2">
+          <h2 className={`text-3xl md:text-4xl text-[#111111] font-display font-black tracking-tight leading-none ${isHindi ? 'mt-1' : ''}`}>{t('lots.lot_production')}</h2>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
           <div className="flex-1 sm:min-w-[300px]">
-            <SearchBar value={search} onChange={setSearch} placeholder="Filter by Lot #, Brand..." />
+            <SearchBar value={search} onChange={setSearch} placeholder={t('lots.search_placeholder')} />
           </div>
         </div>
       </div>
@@ -50,14 +53,14 @@ export const LotDashboard = ({
       {/* Summary Metrics - Desktop Only */}
       <div className="hidden lg:grid grid-cols-4 gap-0 rounded-[2.5rem] overflow-hidden border border-[#111111]/5 shadow-premium bg-white">
         {[
-          { label: 'Active Lots', value: allLots.length, icon: <Layout size={16} /> },
-          { label: 'In Progress', value: allLots.filter(l => getProgress(l) < 100).length, color: 'text-blue-600' },
-          { label: 'Total Output', value: allLots.reduce((acc, lot) => acc + Object.values(lot.sizes || {}).reduce((s, q) => s + (Number(q) || 0), 0), 0), unit: 'Pcs' },
-          { label: 'Alerts', value: allLots.filter(hasLoss).length, color: 'text-red-500', icon: <AlertCircle size={16} /> }
+          { label: t('lots.active_lots'), value: allLots.length, icon: <Layout size={16} /> },
+          { label: t('lots.in_progress'), value: allLots.filter(l => getProgress(l) < 100).length, color: 'text-blue-600' },
+          { label: t('lots.total_output'), value: allLots.reduce((acc, lot) => acc + Object.values(lot.sizes || {}).reduce((s, q) => s + (Number(q) || 0), 0), 0), unit: t('lots.pcs') },
+          { label: t('lots.alerts'), value: allLots.filter(hasLoss).length, color: 'text-red-500', icon: <AlertCircle size={16} /> }
         ].map((stat, i) => (
           <div key={i} className={`p-8 ${i < 3 ? 'border-r border-[#111111]/5' : ''}`}>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[8px] font-black uppercase tracking-widest text-[#111111]/40">{stat.label}</span>
+              <span className={`font-black uppercase text-[#111111]/40 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{stat.label}</span>
               {stat.icon && <span className={stat.color}>{stat.icon}</span>}
             </div>
             <div className="flex items-baseline gap-1">
@@ -91,7 +94,7 @@ export const LotDashboard = ({
                     <div className="flex justify-between items-start mb-2">
                       <div className="overflow-hidden">
                         <p className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] truncate">{lot.brand || 'AMRUT'}</p>
-                        <h3 className="text-sm font-bold text-[#111111] truncate">Lot #{lot.lotNumber}</h3>
+                        <h3 className="text-sm font-bold text-[#111111] truncate">{t('lots.lot_number')}{lot.lotNumber}</h3>
                       </div>
                       {hasLoss(lot) && <AlertCircle size={14} className="text-red-500" />}
                     </div>
@@ -124,7 +127,7 @@ export const LotDashboard = ({
                           ));
                         })()}
                       </div>
-                      <span className="text-[8px] font-black text-[#111111]/40 uppercase flex-shrink-0">{Math.round(getProgress(lot))}% DONE</span>
+                      <span className={`font-black text-[#111111]/40 uppercase flex-shrink-0 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[8px]'}`}>{Math.round(getProgress(lot))}% {t('lots.percent_done')}</span>
                     </div>
                   </div>
                 </div>
@@ -151,14 +154,14 @@ export const LotDashboard = ({
                 <div className="absolute inset-0 bg-gradient-to-t from-[#111111] via-transparent to-transparent opacity-80" />
                 
                 <div className="absolute top-6 left-6 flex gap-2">
-                   <span className="px-3 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-[8px] font-black uppercase tracking-widest text-white">
-                      {lot.status || 'Active'}
+                   <span className={`px-3 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full font-black uppercase text-white ${isHindi ? 'text-[11px] tracking-normal' : 'text-[8px] tracking-widest'}`}>
+                      {t(`common.${(lot.status || 'active').toLowerCase()}`)}
                    </span>
                 </div>
 
                 <div className="absolute bottom-6 left-6 right-6">
                   <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-1">{lot.brand || 'AMRUT'}</p>
-                  <h3 className="text-3xl font-display font-black text-white tracking-tighter leading-none">Lot #{lot.lotNumber}</h3>
+                  <h3 className="text-3xl font-display font-black text-white tracking-tighter leading-none">{t('lots.lot_number')}{lot.lotNumber}</h3>
                 </div>
               </div>
               <div className="p-8 flex flex-col flex-1 justify-between gap-6">
@@ -172,8 +175,8 @@ export const LotDashboard = ({
                 </div>
                 <div className="space-y-4">
                   <div className="flex justify-between items-end">
-                    <p className="text-xl font-display font-black text-[#111111]">{Math.round(getProgress(lot))}% <span className="text-[10px] uppercase font-black tracking-widest text-[#111111]/30 ml-2">Progress</span></p>
-                    {hasLoss(lot) && <div className="text-red-500 bg-red-50 px-3 py-1.5 rounded-full text-[8px] font-black uppercase border border-red-100 flex items-center gap-1.5"><AlertCircle size={12} /> Anomaly</div>}
+                    <p className="text-xl font-display font-black text-[#111111]">{Math.round(getProgress(lot))}% <span className={`uppercase font-black text-[#111111]/30 ml-2 ${isHindi ? 'text-[13px] tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.progress')}</span></p>
+                    {hasLoss(lot) && <div className={`text-red-500 bg-red-50 px-3 py-1.5 rounded-full font-black uppercase border border-red-100 flex items-center gap-1.5 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px]'}`}><AlertCircle size={12} /> {t('lots.anomaly')}</div>}
                   </div>
                   <div className="h-1.5 w-full bg-[#F5F5F5] rounded-full overflow-hidden">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${getProgress(lot)}%` }} className="h-full bg-[#111111] rounded-full" />
@@ -204,7 +207,7 @@ export const LotDashboard = ({
       {allLots.length === 0 && (
         <div className="text-center py-40 border-2 border-dashed border-[#111111]/5 rounded-[3rem]">
           <ClipboardList size={80} strokeWidth={0.5} className="mx-auto mb-6 text-[#111111]/10" />
-          <p className="text-[11px] font-black uppercase tracking-[0.5em] text-[#111111]/20">Awaiting Production Input</p>
+          <p className={`font-black uppercase text-[#111111]/20 ${isHindi ? 'text-[14px] tracking-normal' : 'text-[11px] tracking-[0.5em]'}`}>{t('lots.awaiting_production')}</p>
         </div>
       )}
 

@@ -1,5 +1,5 @@
-import React from 'react';
 import { ArrowLeft, Phone, MapPin, History, Plus, Layers, IndianRupee, CheckCircle2, Calendar, FileText, Edit2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const WorkerDetail = ({ 
   activeWorker, 
@@ -12,6 +12,8 @@ export const WorkerDetail = ({
   setNewWorker,
   generateInvoicePDF 
 }) => {
+  const { t, i18n } = useTranslation();
+  const isHindi = i18n?.language === 'hi';
   if (!activeWorker) return null;
 
   return (
@@ -19,7 +21,7 @@ export const WorkerDetail = ({
       {/* Refined Header */}
       <div className="flex items-center gap-4 mb-2">
         <button onClick={() => onNavigate('/workers')} className="text-[#111111]/40 hover:text-[#111111] transition-all active:scale-90"><ArrowLeft size={24} /></button>
-        <h2 className="text-xl md:text-3xl font-display font-black text-[#111111]">Worker Profile</h2>
+        <h2 className={`font-display font-black text-[#111111] ${isHindi ? 'text-2xl md:text-4xl' : 'text-xl md:text-3xl'}`}>{t('workers.profile_title')}</h2>
       </div>
 
       {/* Profile Card */}
@@ -45,14 +47,14 @@ export const WorkerDetail = ({
 
               <div className="flex items-baseline gap-1.5 bg-[#D4AF37] text-[#111111] px-4 py-2 rounded-2xl shadow-xl flex-shrink-0">
                 <p className="text-lg md:text-2xl font-display font-black tracking-tighter">₹{calculateBalance(transactions).toLocaleString()}</p>
-                <span className="text-[8px] font-black uppercase">Due</span>
+                <span className={`font-black uppercase ${isHindi ? 'text-[11px] tracking-normal' : 'text-[8px]'}`}>{t('workers.due')}</span>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 opacity-60">
-              <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest"><Phone size={10} className="text-[#D4AF37]" /> {activeWorker.phone}</span>
+              <span className={`flex items-center gap-1.5 font-black uppercase ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}><Phone size={10} className="text-[#D4AF37]" /> {activeWorker.phone}</span>
               <div className="w-1 h-1 rounded-full bg-white/10 hidden sm:block" />
-              <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest"><MapPin size={10} className="text-[#D4AF37]" /> {activeWorker.address?.slice(0, 20) || 'No Address'}...</span>
+              <span className={`flex items-center gap-1.5 font-black uppercase ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}><MapPin size={10} className="text-[#D4AF37]" /> {activeWorker.address?.slice(0, 20) || t('workers.no_address')}...</span>
             </div>
           </div>
 
@@ -62,27 +64,27 @@ export const WorkerDetail = ({
               className="bg-white/5 hover:bg-white/10 backdrop-blur-xl px-8 py-3 rounded-2xl border border-white/5 text-[#D4AF37] transition-all flex items-center gap-3 active:scale-95 w-fit"
             >
               <History size={18} />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">View Full History</span>
+              <span className={`font-black uppercase text-white/60 ${isHindi ? 'text-[12px] tracking-normal' : 'text-[10px] tracking-[0.2em]'}`}>{t('workers.view_history')}</span>
             </button>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <button onClick={() => { setEditingTx(null); setNewTx({ type: 'work', pieces: '', rate: '', amount: '', date: new Date().toISOString().split('T')[0] }); onOpenSheet(`/worker/${activeWorker.id}/add-tx`); }} className="bg-white border border-surface-100 p-5 rounded-[2rem] flex flex-col items-center gap-3 shadow-sm active:scale-95 transition-all"><Plus size={24} className="text-[#111111]" /><span className="text-[10px] font-black uppercase tracking-tighter text-[#111111]/60">Single</span></button>
-        <button onClick={() => onOpenSheet(`/worker/${activeWorker.id}/bulk`)} className="bg-[#D4AF37]/10 border border-[#D4AF37]/20 p-5 rounded-[2rem] flex flex-col items-center gap-3 active:scale-95 transition-all"><Layers size={24} className="text-[#D4AF37]" /><span className="text-[10px] font-black uppercase tracking-tighter text-[#D4AF37]">Bulk Entry</span></button>
-        <button onClick={() => onOpenSheet(`/worker/${activeWorker.id}/settle`)} className="bg-[#111111] text-white p-5 rounded-[2rem] flex flex-col items-center gap-3 shadow-premium active:scale-95 transition-all"><IndianRupee size={24} /><span className="text-[10px] font-black uppercase tracking-tighter text-white/80">Settle</span></button>
+        <button onClick={() => { setEditingTx(null); setNewTx({ type: 'work', pieces: '', rate: '', amount: '', date: new Date().toISOString().split('T')[0] }); onOpenSheet(`/worker/${activeWorker.id}/add-tx`); }} className="bg-white border border-surface-100 p-5 rounded-[2rem] flex flex-col items-center gap-3 shadow-sm active:scale-95 transition-all"><Plus size={24} className="text-[#111111]" /><span className={`font-black uppercase text-[#111111]/60 ${isHindi ? 'text-[12px] tracking-tight' : 'text-[10px] tracking-tighter'}`}>{t('workers.single_entry')}</span></button>
+        <button onClick={() => onOpenSheet(`/worker/${activeWorker.id}/bulk`)} className="bg-[#D4AF37]/10 border border-[#D4AF37]/20 p-5 rounded-[2rem] flex flex-col items-center gap-3 active:scale-95 transition-all"><Layers size={24} className="text-[#D4AF37]" /><span className={`font-black uppercase text-[#D4AF37] ${isHindi ? 'text-[12px] tracking-tight' : 'text-[10px] tracking-tighter'}`}>{t('workers.bulk_entry')}</span></button>
+        <button onClick={() => onOpenSheet(`/worker/${activeWorker.id}/settle`)} className="bg-[#111111] text-white p-5 rounded-[2rem] flex flex-col items-center gap-3 shadow-premium active:scale-95 transition-all"><IndianRupee size={24} /><span className={`font-black uppercase text-white/80 ${isHindi ? 'text-[12px] tracking-tight' : 'text-[10px] tracking-tighter'}`}>{t('workers.settle')}</span></button>
       </div>
 
       <div className="space-y-4">
         <div className="flex justify-between items-center px-1">
-          <h3 className="text-lg font-display font-bold text-[#111111]">Recent Work</h3>
-          <span className="text-surface-300 text-[9px] font-bold uppercase tracking-widest">{transactions.length} items</span>
+          <h3 className={`font-display font-bold text-[#111111] ${isHindi ? 'text-xl' : 'text-lg'}`}>{t('workers.recent_work')}</h3>
+          <span className={`text-surface-300 font-bold uppercase ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{transactions.length} {t('workers.items')}</span>
         </div>
         <div className="space-y-3">
           {transactions.length === 0 && (
             <div className="bg-white/50 border-2 border-dashed border-surface-100 rounded-[2rem] py-12 text-center">
-              <p className="text-surface-200 font-bold uppercase tracking-widest text-[10px]">No Active Transactions</p>
+              <p className={`text-surface-200 font-bold uppercase ${isHindi ? 'text-[12px] tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('workers.no_transactions')}</p>
             </div>
           )}
           {transactions.map(tx => (
@@ -101,7 +103,7 @@ export const WorkerDetail = ({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-black text-[#111111] uppercase tracking-tight">{tx.type === 'work' ? 'Work Log' : 'Advance'}</p>
+                    <p className={`font-black text-[#111111] uppercase ${isHindi ? 'text-[13px] tracking-normal' : 'text-sm tracking-tight'}`}>{tx.type === 'work' ? t('workers.work_log') : t('workers.advance')}</p>
                   </div>
                   <p className="text-[10px] text-surface-300 font-bold flex items-center gap-1 mt-1"><Calendar size={10} /> {new Date(tx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
                 </div>

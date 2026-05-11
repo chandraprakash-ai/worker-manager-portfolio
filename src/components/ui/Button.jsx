@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export const Button = ({ 
   children, 
@@ -13,7 +14,10 @@ export const Button = ({
   type = 'button',
   ...props
 }) => {
-  const baseStyles = "relative font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group";
+  const { i18n } = useTranslation();
+  const isHindi = i18n?.language === 'hi';
+
+  const baseStyles = `relative font-black uppercase ${isHindi ? 'tracking-normal text-[1.1em]' : 'tracking-[0.15em]'} transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group`;
   
   const variants = {
     primary: "bg-green-600 text-white hover:bg-green-700 shadow-premium",

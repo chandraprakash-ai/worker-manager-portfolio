@@ -9,7 +9,6 @@
     @apply bg-brand-light text-brand antialiased selection:bg-brand-accent/30;
     -webkit-tap-highlight-color: transparent;
     accent-color: #D4AF37;
-    overscroll-behavior-y: contain;
   }
 
   h1, h2, h3, h4 {

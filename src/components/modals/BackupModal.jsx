@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Cloud, Check, Loader2, ShieldCheck, Database, FileJson, History, LogOut } from 'lucide-react';
-import { BottomSheet } from '../ui/BottomSheet';
+import { Download, Cloud, Check, Loader2, ShieldCheck, Database, FileJson, History, LogOut, Globe } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { createCloudBackup } from '../../lib/firebaseServices';
 import { haptic } from '../../utils/haptics';
+import { useTranslation } from 'react-i18next';
 
 export const BackupModal = ({ 
-  isOpen, 
-  closeSheet, 
   onLogout,
   allData 
 }) => {
+  const { t, i18n } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
   const [isSnapshotting, setIsSnapshotting] = useState(false);
   const [lastAction, setLastAction] = useState(null);
+
+  const currentLanguage = i18n.language || 'en';
+
+  const changeLanguage = (lng) => {
+    haptic('medium');
+    i18n.changeLanguage(lng);
+  };
 
   const handleDownload = () => {
     setIsExporting(true);
@@ -56,16 +62,44 @@ export const BackupModal = ({
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={closeSheet} title="System & Profile">
-      <div className="p-8 space-y-10">
+    <div className="pb-24 pt-4 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col mb-8 gap-2">
+        <h2 className={`text-3xl text-[#111111] font-display font-black tracking-tight leading-none ${i18n.language === 'hi' ? 'mt-1' : ''}`}>{t('system.title')}</h2>
+      </div>
+
+      <div className="space-y-10">
+        
+        {/* Language Selection */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 px-2">
+            <Globe size={14} className="text-[#111111]/30" />
+            <span className={`font-black text-[#111111]/40 ${i18n.language === 'hi' ? 'text-[14px] tracking-normal' : 'text-[10px] uppercase tracking-widest'}`}>{t('system.language')}</span>
+          </div>
+          <div className="flex p-1 bg-[#F5F5F5] rounded-3xl border border-[#111111]/5">
+            <button 
+              onClick={() => changeLanguage('en')}
+              className={`flex-1 py-4 px-6 rounded-2xl font-black transition-all ${currentLanguage.startsWith('en') ? 'bg-green-500 shadow-sm text-white' : 'text-[#111111]/30 hover:text-[#111111]/60'} ${i18n.language === 'hi' ? 'text-[15px] tracking-normal' : 'text-[11px] uppercase tracking-widest'}`}
+            >
+              English
+            </button>
+            <button 
+              onClick={() => changeLanguage('hi')}
+              className={`flex-1 py-4 px-6 rounded-2xl font-black transition-all ${currentLanguage.startsWith('hi') ? 'bg-green-500 shadow-sm text-white' : 'text-[#111111]/30 hover:text-[#111111]/60'} ${i18n.language === 'hi' ? 'text-[15px] tracking-normal' : 'text-[11px] uppercase tracking-widest'}`}
+            >
+              हिन्दी
+            </button>
+          </div>
+        </div>
+
         {/* Security Intro */}
         <div className="flex items-center gap-5 p-6 bg-blue-50 rounded-[2rem] border border-blue-100">
           <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm shadow-blue-500/10">
             <ShieldCheck size={28} />
           </div>
           <div>
-            <h3 className="text-lg font-display font-black text-blue-900 leading-none mb-1">Data Fortress</h3>
-            <p className="text-[10px] font-bold text-blue-800/50 uppercase tracking-widest">Secure Backup Management</p>
+            <h3 className="text-lg font-display font-black text-blue-900 leading-none mb-1">{t('system.data_fortress')}</h3>
+            <p className={`font-bold text-blue-800/50 ${i18n.language === 'hi' ? 'text-[14px] tracking-normal' : 'text-[10px] uppercase tracking-widest'}`}>Secure Backup Management</p>
           </div>
         </div>
 
@@ -82,8 +116,8 @@ export const BackupModal = ({
                 {isExporting ? <Loader2 size={24} className="animate-spin" /> : lastAction === 'download' ? <Check size={24} /> : <FileJson size={24} />}
               </div>
               <div>
-                <h4 className="text-xl font-display font-black text-[#111111]">Manual Export</h4>
-                <p className="text-[10px] font-black uppercase text-[#111111]/30 tracking-widest mt-1">Download JSON File</p>
+                <h4 className="text-xl font-display font-black text-[#111111]">{t('system.manual_export')}</h4>
+                <p className={`font-black text-[#111111]/30 mt-1 ${i18n.language === 'hi' ? 'text-[14px] tracking-normal' : 'text-[10px] uppercase tracking-widest'}`}>Download JSON File</p>
               </div>
             </div>
             <Download size={18} className="opacity-10 group-hover:opacity-100 transition-opacity" />
@@ -100,8 +134,8 @@ export const BackupModal = ({
                 {isSnapshotting ? <Loader2 size={24} className="animate-spin" /> : lastAction === 'snapshot' ? <Check size={24} /> : <Cloud size={24} />}
               </div>
               <div>
-                <h4 className="text-xl font-display font-black text-[#111111]">Cloud Snapshot</h4>
-                <p className="text-[10px] font-black uppercase text-[#111111]/30 tracking-widest mt-1">Internal Safety Restore Point</p>
+                <h4 className="text-xl font-display font-black text-[#111111]">{t('system.cloud_snapshot')}</h4>
+                <p className={`font-black text-[#111111]/30 mt-1 ${i18n.language === 'hi' ? 'text-[14px] tracking-normal' : 'text-[10px] uppercase tracking-widest'}`}>Internal Safety Restore Point</p>
               </div>
             </div>
             <History size={18} className="opacity-10 group-hover:opacity-100 transition-opacity" />
@@ -115,43 +149,29 @@ export const BackupModal = ({
            </div>
            <div className="flex items-center gap-3 mb-4">
               <Database size={14} className="text-[#111111]/20" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-[#111111]/30">Current Snapshot Metrics</span>
+              <span className={`font-black text-[#111111]/30 ${i18n.language === 'hi' ? 'text-[14px] tracking-normal' : 'text-[9px] uppercase tracking-widest'}`}>Current Snapshot Metrics</span>
            </div>
            <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col">
                 <span className="text-[15px] font-display font-black">{allData?.lots?.length || 0}</span>
-                <span className="text-[8px] font-black uppercase text-[#111111]/30 tracking-widest">Active Lots</span>
+                <span className={`font-black text-[#111111]/30 ${i18n.language === 'hi' ? 'text-[12px] tracking-normal' : 'text-[8px] uppercase tracking-widest'}`}>{t('lots.active')} {t('common.lots')}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-[15px] font-display font-black">{allData?.workers?.length || 0}</span>
-                <span className="text-[8px] font-black uppercase text-[#111111]/30 tracking-widest">Personnel Records</span>
+                <span className={`font-black text-[#111111]/30 ${i18n.language === 'hi' ? 'text-[12px] tracking-normal' : 'text-[8px] uppercase tracking-widest'}`}>Personnel Records</span>
               </div>
            </div>
            
            <div className="mt-6 pt-4 border-t border-[#111111]/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                 <span className="text-[8px] font-black uppercase text-[#111111]/40 tracking-widest">24h Automated Sync: Active</span>
+                 <span className={`font-black text-[#111111]/40 ${i18n.language === 'hi' ? 'text-[12px] tracking-normal' : 'text-[8px] uppercase tracking-widest'}`}>{t('system.auto_sync_active')}</span>
               </div>
               <Check size={12} className="text-green-500" />
            </div>
         </div>
 
-        <div className="flex flex-col gap-3 pt-6 border-t border-[#111111]/5">
-          <Button 
-            variant="danger" 
-            className="w-full flex items-center justify-center gap-3 py-6"
-            onClick={() => {
-              haptic('heavy');
-              onLogout();
-            }}
-          >
-            <LogOut size={18} />
-            Log Out from Session
-          </Button>
-          <Button variant="outline" className="w-full" onClick={closeSheet}>Back to Dashboard</Button>
-        </div>
       </div>
-    </BottomSheet>
+    </div>
   );
 };

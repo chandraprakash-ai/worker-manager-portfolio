@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '../../ui/BottomSheet';
 import { Button } from '../../ui/Button';
 
@@ -8,6 +9,8 @@ export const LotAddSizesSheet = ({
   selectedLot,
   onUpdateLot
 }) => {
+  const { t, i18n } = useTranslation();
+  const isHindi = i18n?.language === 'hi';
   const [extendSizes, setExtendSizes] = useState({});
   const [error, setError] = useState('');
   const allAvailableSizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
@@ -18,13 +21,13 @@ export const LotAddSizesSheet = ({
     const selectedKeys = Object.keys(extendSizes);
     
     if (selectedKeys.length === 0) {
-      setError('Please select at least one new size');
+      setError(t('lots.error_no_size'));
       return;
     }
 
     const invalidSize = selectedKeys.find(s => !extendSizes[s] || Number(extendSizes[s]) <= 0);
     if (invalidSize) {
-      setError(`Please enter a valid quantity for size ${invalidSize}`);
+      setError(`${t('lots.error_invalid_qty')} - ${invalidSize}`);
       return;
     }
 
@@ -40,10 +43,10 @@ export const LotAddSizesSheet = ({
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} onBack={onClose} title="Add Sizes" fullScreen>
+    <BottomSheet isOpen={isOpen} onClose={onClose} onBack={onClose} title={t('lots.add_size')} fullScreen>
       <div className="space-y-8 pb-10">
         <div className="space-y-4">
-          <label className="text-[10px] font-black uppercase text-[#111111]/30 ml-1">Select New Sizes</label>
+          <label className={`font-black uppercase text-[#111111]/30 ml-1 ${isHindi ? 'text-[13px] tracking-normal' : 'text-[10px]'}`}>{t('lots.select_new_sizes')}</label>
           <div className="flex flex-wrap gap-2">
             {allAvailableSizes.filter(s => !selectedLot.sizes[s]).map(size => (
               <button 
@@ -87,7 +90,7 @@ export const LotAddSizesSheet = ({
           <p className="text-center text-[10px] font-black text-red-500 uppercase tracking-widest animate-pulse">{error}</p>
         )}
 
-        <Button fullWidth variant="primary" size="lg" onClick={handleAdd}>Confirm Additions</Button>
+        <Button fullWidth variant="primary" size="lg" onClick={handleAdd}>{t('lots.confirm_additions')}</Button>
       </div>
     </BottomSheet>
   );

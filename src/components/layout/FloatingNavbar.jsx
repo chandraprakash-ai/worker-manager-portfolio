@@ -1,18 +1,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Users, ClipboardList, User, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Home, Users, ClipboardList, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { haptic } from '../../utils/haptics';
-
 export const FloatingNavbar = () => {
+  const { t, i18n: langContext } = useTranslation();
+  const isHindi = langContext?.language === 'hi';
   const location = useLocation();
   const navigate = useNavigate();
 
   const navItems = [
-    { id: 'home', label: 'Home', icon: Home, path: '/' },
-    { id: 'workers', label: 'Workers', icon: Users, path: '/workers' },
-    { id: 'lots', label: 'Lots', icon: ClipboardList, path: '/lots' },
-    { id: 'profile', label: 'System', icon: User, path: '/system' },
+    { id: 'home', label: t('common.home'), icon: Home, path: '/' },
+    { id: 'workers', label: t('common.workers'), icon: Users, path: '/workers' },
+    { id: 'lots', label: t('common.lots'), icon: ClipboardList, path: '/lots' },
+    { id: 'profile', label: t('common.system'), icon: User, path: '/system' },
   ];
 
   const isActive = (path) => {
@@ -22,7 +24,9 @@ export const FloatingNavbar = () => {
 
   const handleNavigate = (path) => {
     haptic('light');
-    navigate(path);
+    // For main navigation, we use replace: true to prevent history stack bloat
+    // this gives it a "Native App" feel where tabs don't create back-loops
+    navigate(path, { replace: true });
   };
 
   return (
@@ -57,7 +61,7 @@ export const FloatingNavbar = () => {
                     className={`transition-colors duration-300 ${active ? 'text-[#111111]' : 'text-white/40 group-hover:text-white/70'}`} 
                     strokeWidth={active ? 3 : 2}
                   />
-                  <span className={`text-[7px] font-black uppercase tracking-widest mt-1.5 transition-colors duration-300 ${active ? 'text-[#111111]' : 'text-white/20 group-hover:text-white/40'}`}>
+                  <span className={`font-black mt-1.5 transition-colors duration-300 ${active ? 'text-[#111111]' : 'text-white/20 group-hover:text-white/40'} ${isHindi ? 'text-[12px] tracking-normal' : 'text-[7px] uppercase tracking-widest'}`}>
                     {item.label}
                   </span>
                 </div>

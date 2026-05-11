@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useAuthStore } from './store/useAuthStore';
 import { useDataStore } from './store/useDataStore';
 import { 
@@ -12,22 +12,25 @@ import { BottomSheet } from './components/ui/BottomSheet';
 import { haptic } from './utils/haptics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateInvoicePDF } from './utils/generateInvoice';
+import * as fs from './lib/firebaseServices';
 import { 
   Routes, Route, useNavigate, useLocation, useParams, useSearchParams 
 } from 'react-router-dom';
 import { LoginPage } from './components/auth/LoginPage';
 import { Header } from './components/layout/Header';
-import { HomeDashboard } from './components/dashboard/HomeDashboard';
-import { WorkerDirectory } from './components/workers/WorkerDirectory';
-import { WorkerDetail } from './components/workers/WorkerDetail';
-import { LotDashboard } from './components/lots/LotDashboard';
-import { WorkerModals } from './components/modals/WorkerModals';
-import { InventoryModals } from './components/modals/InventoryModals';
-import { InventoryDashboard } from './components/inventory/InventoryDashboard';
-import { LotModals } from './components/modals/LotModals';
-import { BackupModal } from './components/modals/BackupModal';
 import { PullToRefresh } from './components/ui/PullToRefresh';
 import { FloatingNavbar } from './components/layout/FloatingNavbar';
+
+// Lazy loaded components for Lightning Fast Startup
+const HomeDashboard = React.lazy(() => import('./components/dashboard/HomeDashboard').then(m => ({ default: m.HomeDashboard })));
+const WorkerDirectory = React.lazy(() => import('./components/workers/WorkerDirectory').then(m => ({ default: m.WorkerDirectory })));
+const WorkerDetail = React.lazy(() => import('./components/workers/WorkerDetail').then(m => ({ default: m.WorkerDetail })));
+const LotDashboard = React.lazy(() => import('./components/lots/LotDashboard').then(m => ({ default: m.LotDashboard })));
+const WorkerModals = React.lazy(() => import('./components/modals/WorkerModals').then(m => ({ default: m.WorkerModals })));
+const InventoryModals = React.lazy(() => import('./components/modals/InventoryModals').then(m => ({ default: m.InventoryModals })));
+const InventoryDashboard = React.lazy(() => import('./components/inventory/InventoryDashboard').then(m => ({ default: m.InventoryDashboard })));
+const LotModals = React.lazy(() => import('./components/modals/LotModals').then(m => ({ default: m.LotModals })));
+const BackupModal = React.lazy(() => import('./components/modals/BackupModal').then(m => ({ default: m.BackupModal })));
 
 function App() {
   // --- AUTH STORE ---
@@ -48,7 +51,7 @@ function App() {
   // --- AUTOMATED BACKUP LOGIC ---
   useEffect(() => {
     const handleAutoBackup = async () => {
-      if (!user || isLoading || workers.length === 0) return;
+      if (isLoading || workers.length === 0) return;
 
       try {
         const latestBackup = await fs.fetchLatestBackup();
@@ -83,7 +86,7 @@ function App() {
     };
 
     handleAutoBackup();
-  }, [user, isLoading, workers.length]);
+  }, [isLoading, workers.length]);
 
   const fetchTransactions = useDataStore(state => state.fetchTransactions);
   const addWorker = useDataStore(state => state.addWorker);
@@ -168,10 +171,8 @@ function App() {
 
   // --- EFFECTS ---
   useEffect(() => {
-    if (user) {
-      initializeData();
-    }
-  }, [user, initializeData]);
+    initializeData();
+  }, [initializeData]);
 
   useEffect(() => {
     if (selectedWorkerId) {
@@ -395,9 +396,6 @@ function App() {
 
 
   // --- EARLY RETURNS ---
-  if (!user) {
-    return <LoginPage username={username} setUsername={setUsername} pin={pin} setPin={setPin} handleLogin={handleLogin} />;
-  }
 
   if (error) {
     return (
@@ -414,12 +412,23 @@ function App() {
 
   if (isLoading && !workers.length && !allLots.length) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-white">
-        <motion.div animate={{ scale: [1, 1.1, 1], rotate: [0, 90, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full" />
-        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.4em] text-[#111111]/30 italic">Decrypting Ledger...</p>
+      <div className="h-screen w-full flex items-center justify-center bg-white">
+        <motion.div 
+          animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.95, 1, 0.95] }} 
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} 
+          className="w-16 h-16 bg-[#D4AF37]/10 rounded-full flex items-center justify-center"
+        >
+          <div className="w-2 h-2 bg-[#D4AF37] rounded-full" />
+        </motion.div>
       </div>
     );
   }
+
+  const LoadingFallback = () => (
+    <div className="h-screen w-full flex flex-col items-center justify-center bg-[#FAFAFA]">
+      <div className="w-12 h-12 border-4 border-[#111111]/10 border-t-[#D4AF37] rounded-full animate-spin"></div>
+    </div>
+  );
 
   // --- MAIN RENDER ---
   const filteredWorkers = workers.filter(w => w.name.toLowerCase().includes(search.toLowerCase()));
@@ -428,66 +437,110 @@ function App() {
   return (
     <>
       <div className="min-h-screen bg-[#FAFAFA] pb-44 font-sans no-print text-[#111111]">
-        <main className="px-6 py-8 max-w-7xl mx-auto">
-          <PullToRefresh onRefresh={initializeData}>
-            {isHomePage && (
-              <HomeDashboard 
-                navigate={navigate} 
-                workers={workers} 
-                lots={allLots}
-                inventory={allInventory}
-                transactions={transactions}
-                onOpenSheet={openSheet}
-              />
+        <main className="px-6 py-8 max-w-7xl mx-auto overflow-x-hidden">
+          <Suspense fallback={<LoadingFallback />}>
+            <AnimatePresence mode="wait">
+            {/* Main Tab Stack (Persistent) */}
+            {!selectedWorkerId && !isInventoryPage && (
+              <motion.div
+                key="main-tabs"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {isHomePage && (
+                  <HomeDashboard 
+                    navigate={navigate} 
+                    workers={workers} 
+                    lots={allLots}
+                    inventory={allInventory}
+                    transactions={transactions}
+                    onOpenSheet={openSheet}
+                  />
+                )}
+
+                {isWorkersPage && !activeWorker && (
+                  <WorkerDirectory 
+                    search={search} 
+                    setSearch={setSearch} 
+                    workers={filteredWorkers} 
+                    onOpenSheet={openSheet} 
+                    onNavigate={navigate} 
+                  />
+                )}
+
+                {isLotPage && !selectedLotId && (
+                  <LotDashboard 
+                    search={search} 
+                    setSearch={setSearch} 
+                    allLots={allLots} 
+                    onNavigate={navigate} 
+                    onOpenSheet={openSheet} 
+                  />
+                )}
+
+                {isSystemOpen && (
+                  <BackupModal 
+                    onLogout={logout}
+                    allData={{
+                      workers: workers,
+                      lots: allLots,
+                      inventory: allInventory,
+                      transactions: transactions,
+                      settlements: allSettlements
+                    }}
+                  />
+                )}
+              </motion.div>
             )}
 
-            {isWorkersPage && !activeWorker && (
-              <WorkerDirectory 
-                search={search} 
-                setSearch={setSearch} 
-                workers={filteredWorkers} 
-                onOpenSheet={openSheet} 
-                onNavigate={navigate} 
-              />
-            )}
-
+            {/* Detail Views (Slide In from Right) */}
             {activeWorker && (
-              <WorkerDetail 
-                activeWorker={activeWorker} 
-                transactions={activeTransactions} 
-                calculateBalance={calculateBalance} 
-                onNavigate={navigate} 
-                onOpenSheet={openSheet} 
-                setEditingTx={setEditingTx} 
-                setNewTx={setNewTx} 
-                setNewWorker={setNewWorker}
-                generateInvoicePDF={generateInvoicePDF} 
-              />
+              <motion.div
+                key={`worker-${activeWorker.id}`}
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed inset-0 z-[80] bg-[#FAFAFA] overflow-y-auto px-6 py-8 pb-44"
+              >
+                <WorkerDetail 
+                  activeWorker={activeWorker} 
+                  transactions={activeTransactions} 
+                  calculateBalance={calculateBalance} 
+                  onNavigate={navigate} 
+                  onOpenSheet={openSheet} 
+                  setEditingTx={setEditingTx} 
+                  setNewTx={setNewTx} 
+                  setNewWorker={setNewWorker}
+                  generateInvoicePDF={generateInvoicePDF} 
+                />
+              </motion.div>
             )}
 
             {isInventoryPage && (
-              <InventoryDashboard 
-                search={search} 
-                setSearch={setSearch} 
-                allInventory={allInventory} 
-                onNavigate={navigate} 
-                onOpenSheet={openSheet} 
-                setActiveInvItem={setActiveInvItem} 
-              />
+              <motion.div
+                key="inventory"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+              >
+                <InventoryDashboard 
+                  search={search} 
+                  setSearch={setSearch} 
+                  allInventory={allInventory} 
+                  onNavigate={navigate} 
+                  onOpenSheet={openSheet} 
+                  setActiveInvItem={setActiveInvItem} 
+                />
+              </motion.div>
             )}
-
-            {isLotPage && (
-              <LotDashboard 
-                search={search} 
-                setSearch={setSearch} 
-                allLots={allLots} 
-                onNavigate={navigate} 
-                onOpenSheet={openSheet} 
-              />
-            )}
-          </PullToRefresh>
+          </AnimatePresence>
+         </Suspense>
         </main>
 
+      <Suspense fallback={null}>
       <WorkerModals 
         isBulkEntryOpen={isBulkEntryOpen} 
         closeSheet={closeSheet} 
@@ -548,19 +601,7 @@ function App() {
         onOpenSheet={openSheet}
         onNavigate={navigate}
       />
-
-      <BackupModal 
-        isOpen={isSystemOpen}
-        closeSheet={closeSheet}
-        onLogout={logout}
-        allData={{
-          workers: workers,
-          lots: allLots,
-          inventory: allInventory,
-          transactions: transactions,
-          settlements: allSettlements
-        }}
-      />
+      </Suspense>
 
       {/* Anchored FABs (Outside PullToRefresh to prevent jumping) */}
       <AnimatePresence>

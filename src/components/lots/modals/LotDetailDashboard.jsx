@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Tag, Image, Check, X, Pencil, Loader2, Plus, AlertCircle } from 'lucide-react';
 import { BottomSheet } from '../../ui/BottomSheet';
 import { Button } from '../../ui/Button';
@@ -60,6 +61,8 @@ export const LotDetailDashboard = ({
 }) => {
   const [collapsedStages, setCollapsedStages] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
+  const { t, i18n } = useTranslation();
+  const isHindi = i18n?.language === 'hi';
 
   // Initialize draftLot with hydrated data
   const [draftLot, setDraftLot] = useState(() => hydrateLotData(selectedLot));
@@ -156,7 +159,7 @@ export const LotDetailDashboard = ({
   const totalLotPcs = Object.values(draftLot.sizes || {}).reduce((acc, val) => acc + (Number(val) || 0), 0);
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} onBack={onClose} title="Lot Dashboard" fullScreen>
+    <BottomSheet isOpen={isOpen} onClose={onClose} onBack={onClose} title={t('lots.lot_details')} fullScreen>
       <div className="space-y-8 pb-10">
         {/* Header Section */}
         <div className="bg-[#111111] text-white p-6 md:p-10 rounded-[2.5rem] relative overflow-hidden shadow-premium flex flex-col justify-between min-h-[260px]">
@@ -166,19 +169,19 @@ export const LotDetailDashboard = ({
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] opacity-80">{draftLot.brand} Batch</span>
+              <span className={`font-black uppercase text-[#D4AF37] opacity-80 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[10px] tracking-[0.3em]'}`}>{draftLot.brand} {t('lots.batch')}</span>
             </div>
             <h3 className="text-5xl md:text-8xl font-display font-black tracking-tighter leading-none mb-2">{draftLot.lotNumber}</h3>
           </div>
           <div className="relative z-10 flex items-end justify-between pt-8 border-t border-white/10">
             <div className="flex gap-8">
               <div className="flex flex-col">
-                <span className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Status</span>
-                <span className="text-sm font-black uppercase text-[#D4AF37]">{draftLot.status}</span>
+                <span className={`font-black uppercase text-white/30 mb-1 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.status')}</span>
+                <span className={`font-black uppercase text-[#D4AF37] ${isHindi ? 'text-[15px] tracking-normal' : 'text-sm'}`}>{t(`common.${draftLot.status?.toLowerCase() || 'active'}`)}</span>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] mb-1">Total Pieces</p>
+              <p className={`font-black uppercase text-[#D4AF37] mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.quantity_matrix')}</p>
               <h4 className="text-4xl font-display font-black leading-none">{totalLotPcs}</h4>
             </div>
           </div>
@@ -187,12 +190,12 @@ export const LotDetailDashboard = ({
         {/* Media Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <MediaCard 
-            label="Design Asset" 
+            label={t('lots.design_asset')} 
             url={draftLot.itemImage} 
             onClick={() => setPreviewData({ url: draftLot.itemImage, type: 'itemImage' })} 
           />
           <MediaCard 
-            label="Sample Photo" 
+            label={t('lots.sample_photo')} 
             url={draftLot.sampleImage} 
             onClick={() => setPreviewData({ url: draftLot.sampleImage, type: 'sampleImage' })} 
           />
@@ -200,12 +203,12 @@ export const LotDetailDashboard = ({
 
         {/* Quantity Matrix */}
         <div className="space-y-6" ref={matrixRef}>
-          <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#111111]/30">Quantity Matrix</h4>
+          <h4 className={`font-black text-[#111111]/30 ${isHindi ? 'text-[16px] tracking-normal' : 'text-[10px] uppercase tracking-[0.3em]'}`}>{t('lots.quantity_matrix')}</h4>
           <div className="grid grid-cols-4 gap-2 md:gap-3">
             {Object.entries(draftLot.sizes).map(([size, qty]) => (
               <div key={size} className="bg-white border border-[#111111]/5 p-4 rounded-2xl shadow-sm flex flex-col items-center justify-center relative group transition-all hover:border-[#D4AF37]/30">
                 <button 
-                  onClick={() => confirm(`Remove size ${size}?`) && updateDraft({ sizes: Object.fromEntries(Object.entries(draftLot.sizes).filter(([s]) => s !== size)) })}
+                  onClick={() => confirm(`${t('lots.remove_size_prompt')} ${size}?`) && updateDraft({ sizes: Object.fromEntries(Object.entries(draftLot.sizes).filter(([s]) => s !== size)) })}
                   className="absolute top-2 right-2 w-6 h-6 bg-[#F5F5F5] rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
                 >
                   <X size={10} />
@@ -233,7 +236,7 @@ export const LotDetailDashboard = ({
               <div className="w-8 h-8 rounded-full border border-[#111111]/5 flex items-center justify-center">
                 <Plus size={14} className="text-[#111111]/20" />
               </div>
-              <span className="text-[8px] font-black uppercase tracking-widest text-[#111111]/20">Add Size</span>
+              <span className={`font-black uppercase text-[#111111]/20 ${isHindi ? 'text-[9px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.add_size')}</span>
             </button>
           </div>
         </div>
@@ -241,7 +244,7 @@ export const LotDetailDashboard = ({
         {/* Production Pipeline */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#111111]/40">Production Pipeline</h4>
+            <h4 className={`font-black text-[#111111]/40 ${isHindi ? 'text-[16px] tracking-normal' : 'text-[11px] uppercase tracking-[0.3em]'}`}>{t('lots.production_pipeline')}</h4>
           </div>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {draftLot.processes.map((proc, idx) => (
@@ -263,17 +266,17 @@ export const LotDetailDashboard = ({
         {/* Notes & Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-white border border-[#111111]/5 rounded-[3rem] p-6 shadow-premium">
-            <span className="text-sm font-black uppercase text-[#111111] mb-4 block">Notes</span>
+            <span className={`font-black uppercase text-[#111111] mb-4 block ${isHindi ? 'text-[15px] tracking-normal' : 'text-sm'}`}>{t('lots.notes')}</span>
             <textarea 
               value={draftLot.notes || ''}
               onChange={(e) => updateDraft({ notes: e.target.value })}
               className="w-full h-32 bg-transparent text-[15px] font-bold outline-none resize-none"
-              placeholder="Add production observations..."
+              placeholder={t('lots.notes_placeholder')}
             />
           </div>
           <div className="flex flex-col justify-end gap-4">
-            <Button variant="danger" onClick={() => confirm('Permanently delete this lot?') && onDeleteLot(draftLot.id)}>Delete Lot</Button>
-            <Button variant="primary" onClick={handleFinalSave}>Save & Close</Button>
+            <Button variant="danger" onClick={() => confirm(t('lots.delete_lot_prompt')) && onDeleteLot(draftLot.id)}>{t('lots.delete_lot')}</Button>
+            <Button variant="primary" onClick={handleFinalSave}>{t('lots.save_close')}</Button>
           </div>
         </div>
       </div>
@@ -295,13 +298,21 @@ const MediaCard = ({ label, url, onClick }) => (
 );
 
 const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isCollapsed, toggleCollapse, error }) => {
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const { t, i18n } = useTranslation();
+  const isHindi = i18n?.language === 'hi';
   const isOverLimit = Number(proc.pieces) > totalLotPcs;
   const prevPcs = idx > 0 ? Number(draftLot.processes[idx-1].pieces || 0) : totalLotPcs;
   const isDeficit = Number(proc.pieces) > 0 && Number(proc.pieces) < prevPcs;
-  const isContractorStage = ['screening', 'embroidery', 'diamond', 'button'].includes(proc.id);
+  const isComplexStage = ['screening', 'embroidery', 'diamond', 'button'].includes(proc.id);
+  const isCurrentlyCollapsed = isComplexStage ? (isCollapsed ?? true) : false;
 
   return (
-    <div id={`proc-${proc.id}`} className={`p-6 rounded-[2.5rem] border transition-all relative ${error ? 'border-red-500 shadow-[0_20px_50px_rgba(239,68,68,0.1)]' : proc.isDone ? 'bg-green-50/50 border-green-200' : 'bg-white border-[#111111]/5 shadow-premium'}`}>
+    <div 
+      id={`proc-${proc.id}`} 
+      onClick={isComplexStage ? toggleCollapse : undefined}
+      className={`p-6 rounded-[2.5rem] border transition-all relative ${isComplexStage ? 'cursor-pointer' : ''} ${error ? 'border-red-500 shadow-[0_20px_50px_rgba(239,68,68,0.1)]' : proc.isDone ? 'bg-green-50/50 border-green-200' : 'bg-white border-[#111111]/5 shadow-premium'}`}
+    >
       {error && (
         <div className="absolute -top-3 left-10 bg-red-500 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest z-20 shadow-lg flex items-center gap-1.5 animate-bounce">
           <AlertCircle size={10} strokeWidth={4} /> {error}
@@ -310,56 +321,60 @@ const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isC
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-5">
           <button 
-            onClick={() => updateDraftProcess(proc.id, { isDone: !proc.isDone })}
+            onClick={(e) => {
+              e.stopPropagation();
+              updateDraftProcess(proc.id, { isDone: !proc.isDone });
+            }}
             className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center ${proc.isDone ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-[#111111]/10 text-[#111111]/10'}`}
           >
             {proc.isDone && <Check size={24} strokeWidth={4} />}
           </button>
-          <div onClick={toggleCollapse} className="cursor-pointer">
-            <h3 className="text-lg font-display font-black text-[#111111]">{proc.name}</h3>
-            <p className="text-[9px] font-black uppercase text-[#111111]/30">{proc.isDone ? 'Validated' : 'Awaiting Input'}</p>
+          <div>
+            <h3 className="text-lg font-display font-black text-[#111111]">{t(`stages.${proc.id}`)}</h3>
+            <p className={`font-black uppercase text-[#111111]/30 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{proc.isDone ? '' : t('lots.awaiting_input')}</p>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className={`flex items-center gap-1.5 p-1 rounded-2xl ${error ? 'bg-red-50 ring-2 ring-red-500/20' : isOverLimit ? 'bg-orange-50' : isDeficit ? 'bg-amber-50' : 'bg-[#F5F5F5]'}`}>
-            <span className="text-[11px] font-black ml-3 opacity-40">Pcs</span>
+        <div className="flex flex-col items-end relative" onClick={(e) => e.stopPropagation()}>
+          <div className={`flex items-center gap-1.5 p-2 rounded-2xl ${error ? 'bg-red-50 ring-2 ring-red-500/20' : isOverLimit ? 'bg-orange-50' : isDeficit ? 'bg-amber-50' : 'bg-[#F5F5F5]'}`}>
+            <span className={`font-black ml-3 opacity-40 ${isHindi ? 'text-[16px] tracking-normal' : 'text-[14px]'}`}>{t('lots.pcs')}</span>
             <input 
               type="number" 
               value={proc.pieces || ''} 
               onChange={(e) => updateDraftProcess(proc.id, { pieces: e.target.value })}
-              className="w-16 bg-transparent text-center font-black outline-none"
+              className="w-16 bg-transparent text-center font-black outline-none text-xl"
             />
           </div>
-          {isOverLimit && <span className="text-[7px] font-black text-orange-600 uppercase">Over Limit</span>}
-          {isDeficit && <span className="text-[7px] font-black text-amber-500 uppercase animate-pulse">Deficit Warning</span>}
+          <div className="absolute -bottom-5 right-1 whitespace-nowrap">
+            {isOverLimit && <span className={`font-black text-orange-600 uppercase ${isHindi ? 'text-[9px] tracking-normal' : 'text-[7px] tracking-widest'}`}>{t('lots.over_limit')}</span>}
+            {isDeficit && <span className={`font-black text-amber-500 uppercase animate-pulse ${isHindi ? 'text-[9px] tracking-normal' : 'text-[7px] tracking-widest'}`}>{t('lots.deficit_warning')}</span>}
+          </div>
         </div>
       </div>
       
       {/* Expanded Logic */}
-      {!isCollapsed && (
-        <div className="mt-6 pt-6 border-t border-[#111111]/5">
+      {isComplexStage && !isCurrentlyCollapsed && (
+        <div className="mt-6 pt-6 border-t border-[#111111]/5" onClick={(e) => e.stopPropagation()}>
            {/* Screening & Embroidery: Ref & Notes */}
            {['screening', 'embroidery'].includes(proc.id) && (
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Reference ID</span>
+                  <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.reference_id')}</span>
                   <input 
                     type="text" 
                     value={proc.billNumber || ''} 
                     onChange={(e) => updateDraftProcess(proc.id, { billNumber: e.target.value })}
-                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
+                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-sm font-bold"
                     placeholder="Ref / Bill #"
                   />
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Observations</span>
-                  <input 
-                    type="text" 
-                    value={proc.notes || ''} 
-                    onChange={(e) => updateDraftProcess(proc.id, { notes: e.target.value })}
-                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
-                    placeholder="Notes..."
-                  />
+                  <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.observations')}</span>
+                  <div 
+                    onClick={() => setIsNotesOpen(true)}
+                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 flex items-center text-sm font-bold text-[#111111] cursor-pointer hover:border-[#111111]/20 transition-all"
+                  >
+                    <span className="truncate opacity-50">{proc.notes || t('lots.notes_short')}</span>
+                  </div>
                 </div>
              </div>
            )}
@@ -368,12 +383,12 @@ const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isC
            {proc.id === 'diamond' && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Rate (₹)</span>
+                  <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.rate_currency')}</span>
                   <input 
                     type="number" 
                     value={proc.pricePerPc || ''} 
                     onChange={(e) => updateDraftProcess(proc.id, { pricePerPc: e.target.value })}
-                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold font-display"
+                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-sm font-bold font-display"
                     placeholder="₹ 0.00"
                   />
                 </div>
@@ -384,22 +399,22 @@ const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isC
            {proc.id === 'button' && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Hardware / PC</span>
+                  <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.hardware_pc')}</span>
                   <input 
                     type="number" 
                     value={proc.numButtons || ''} 
                     onChange={(e) => updateDraftProcess(proc.id, { numButtons: e.target.value })}
-                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold"
+                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-sm font-bold"
                     placeholder="0"
                   />
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase text-[#111111]/20 ml-2">Rate (₹)</span>
+                  <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.rate_currency')}</span>
                   <input 
                     type="number" 
                     value={proc.pricePerPc || ''} 
                     onChange={(e) => updateDraftProcess(proc.id, { pricePerPc: e.target.value })}
-                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-[10px] font-bold font-display"
+                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-sm font-bold font-display"
                     placeholder="₹ 0.00"
                   />
                 </div>
@@ -408,11 +423,44 @@ const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isC
         </div>
       )}
 
-      {['screening', 'embroidery', 'diamond', 'button'].includes(proc.id) && (
+      {isComplexStage && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
-          <div className={`h-1 rounded-full transition-all duration-500 ${isCollapsed ? 'bg-[#111111]/5 w-8' : 'bg-[#D4AF37]/20 w-12'}`} />
+          <div className={`h-1 rounded-full transition-all duration-500 ${isCurrentlyCollapsed ? 'bg-[#111111]/20 w-8' : 'bg-[#D4AF37]/20 w-12'}`} />
         </div>
       )}
+
+      <AnimatePresence>
+        {isNotesOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#111111]/40 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); setIsNotesOpen(false); }}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-6 bg-[#111111] text-white flex justify-between items-center">
+                <h3 className="font-display font-black text-xl">{t(`stages.${proc.id}`)} - {t('lots.observations')}</h3>
+                <button onClick={() => setIsNotesOpen(false)} className="bg-white/10 p-2 rounded-full hover:bg-white/20 text-white transition-all active:scale-95">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <textarea 
+                  value={proc.notes || ''} 
+                  onChange={(e) => updateDraftProcess(proc.id, { notes: e.target.value })}
+                  className="w-full h-40 bg-[#F5F5F5] rounded-3xl p-5 text-sm font-bold outline-none resize-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                  placeholder={t('lots.notes_placeholder')}
+                  autoFocus
+                />
+                <Button variant="primary" fullWidth onClick={() => setIsNotesOpen(false)}>
+                  {t('common.save')}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

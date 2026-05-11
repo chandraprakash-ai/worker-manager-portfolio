@@ -1,5 +1,10 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import { 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager,
+  getFirestore
+} from 'firebase/firestore';
 
 // Replace these with real credentials in .env.local
 const firebaseConfig = {
@@ -18,11 +23,24 @@ if (!isConfigValid) {
   console.error("Firebase configuration is missing. Check your .env.local file.");
 }
 
-export const app = initializeApp(isConfigValid ? firebaseConfig : {});
-export const db = getFirestore(app);
+// Singleton app initialization
+export const app = getApps().length === 0 ? initializeApp(isConfigValid ? firebaseConfig : {}) : getApps()[0];
+
+// Singleton Firestore initialization to prevent HMR errors
+let firestoreDb;
+try {
+  firestoreDb = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch (e) {
+  firestoreDb = getFirestore(app);
+}
+
+export const db = firestoreDb;
+
 // Cloudinary used for storage
-
-
 // Simple, optimized root collections
 export const COLLECTIONS = {
   LOTS: 'lots',
