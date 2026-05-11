@@ -126,29 +126,7 @@ export const HomeDashboard = ({ workers, lots, transactions, navigate }) => {
           </div>
         </motion.div>
 
-        {/* Worker Card at Last */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white p-8 rounded-[3rem] border border-surface-100 shadow-premium flex items-center justify-between group"
-        >
-          <div className="flex items-center gap-6">
-            <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-[1.5rem] flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-               <Users size={28} />
-            </div>
-            <div>
-               <p className={`font-black uppercase text-[#111111]/20 tracking-widest mb-1 ${i18n.language === 'hi' ? 'text-[12px] tracking-normal' : 'text-[9px]'}`}>{t('dashboard.workforce_presence')}</p>
-               <h4 className="text-3xl font-display font-black text-[#111111] leading-none">
-                 {workers?.length || 0} <span className="text-sm font-black text-blue-600/40 ml-2">{t('dashboard.registered')}</span>
-               </h4>
-            </div>
-          </div>
-          
-          <div className="px-4 py-2 bg-blue-50 rounded-xl">
-             <span className={`font-black text-blue-600 uppercase tracking-widest ${i18n.language === 'hi' ? 'text-[12px] tracking-normal' : 'text-[10px]'}`}>{activeWorkersToday} {t('dashboard.active_today')}</span>
-          </div>
-        </motion.div>
+
       </div>
     </div>
   );

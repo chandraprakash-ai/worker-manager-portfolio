@@ -92,16 +92,7 @@ export const BackupModal = ({
           </div>
         </div>
 
-        {/* Security Intro */}
-        <div className="flex items-center gap-5 p-6 bg-blue-50 rounded-[2rem] border border-blue-100">
-          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm shadow-blue-500/10">
-            <ShieldCheck size={28} />
-          </div>
-          <div>
-            <h3 className="text-lg font-display font-black text-blue-900 leading-none mb-1">{t('system.data_fortress')}</h3>
-            <p className={`font-bold text-blue-800/50 ${i18n.language === 'hi' ? 'text-[14px] tracking-normal' : 'text-[10px] uppercase tracking-widest'}`}>Secure Backup Management</p>
-          </div>
-        </div>
+
 
         {/* Options Grid */}
         <div className="grid grid-cols-1 gap-6">
