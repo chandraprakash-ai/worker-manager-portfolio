@@ -46,6 +46,7 @@ const hydrateLotData = (lot) => {
   return { 
     ...lot, 
     sizes: lot.sizes || {},
+    numColors: lot.numColors || 1,
     processes: hydratedProcesses 
   };
 };
@@ -60,30 +61,60 @@ export const LotDetailDashboard = ({
   onOpenSheet,
   setPreviewData
 }) => {
-  const [collapsedStages, setCollapsedStages] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [sizeToDelete, setSizeToDelete] = useState(null);
   const { t, i18n } = useTranslation();
   const isHindi = i18n?.language === 'hi';
 
-  // Initialize draftLot with hydrated data
-  const [draftLot, setDraftLot] = useState(() => hydrateLotData(selectedLot));
+  const [isSaving, setIsSaving] = useState(false);
+  const CACHE_KEY = `lot_draft_${selectedLot?.id}`;
+
+  // Initialize draftLot with hydrated data or cached data
+  const [draftLot, setDraftLot] = useState(() => {
+    if (!selectedLot) return null;
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        console.error('Failed to parse cached lot', e);
+      }
+    }
+    return hydrateLotData(selectedLot);
+  });
 
   const matrixRef = useRef(null);
+  const debounceTimeoutRef = useRef(null);
+  const lastSavedLotRef = useRef(draftLot);
 
   // Sync draft if selectedLot changes from outside
   useEffect(() => {
     if (selectedLot?.id && selectedLot.id !== draftLot?.id) {
-      setDraftLot(hydrateLotData(selectedLot));
+      const newCacheKey = `lot_draft_${selectedLot.id}`;
+      const cached = localStorage.getItem(newCacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setDraftLot(parsed);
+          lastSavedLotRef.current = parsed;
+          return;
+        } catch(e) {}
+      }
+      const hydrated = hydrateLotData(selectedLot);
+      setDraftLot(hydrated);
+      lastSavedLotRef.current = hydrated;
     }
   }, [selectedLot?.id]);
 
-  if (!draftLot) return null;
-
-  const handleFinalSave = async () => {
+  useEffect(() => {
+    if (!draftLot || draftLot.id !== selectedLot?.id) return;
+    
+    // Validate
     const errors = {};
-    const totalPcs = Object.values(draftLot.sizes || {}).reduce((acc, val) => acc + (Number(val) || 0), 0);
+    const numColors = Number(draftLot.numColors) || 1;
+    const basePcs = Object.values(draftLot.sizes || {}).reduce((acc, val) => acc + (Number(val) || 0), 0);
+    const totalPcs = basePcs * numColors;
     
     (draftLot.processes || []).forEach((p) => {
       const pcs = Number(p.pieces) || 0;
@@ -92,32 +123,74 @@ export const LotDetailDashboard = ({
       }
     });
 
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      const firstErrorId = Object.keys(errors)[0];
-      const element = document.getElementById(`proc-${firstErrorId}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setValidationErrors(errors);
+
+    if (Object.keys(errors).length > 0) return;
+
+    if (JSON.stringify(draftLot) === JSON.stringify(lastSavedLotRef.current)) return;
+
+    // Cache locally
+    localStorage.setItem(CACHE_KEY, JSON.stringify(draftLot));
+
+    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+
+    // Debounce DB save
+    debounceTimeoutRef.current = setTimeout(async () => {
+      setIsSaving(true);
+      const sanitizedLot = {
+        ...draftLot,
+        numColors: Number(draftLot.numColors) || 1,
+        sizes: Object.fromEntries(
+          Object.entries(draftLot.sizes || {}).map(([s, q]) => [s, Number(q) || 0])
+        ),
+        processes: (draftLot.processes || []).map(p => {
+          const clean = { ...p };
+          if (clean.pieces !== undefined) clean.pieces = Number(clean.pieces) || 0;
+          if (clean.numButtons !== undefined) clean.numButtons = Number(clean.numButtons) || 0;
+          if (clean.pricePerPc !== undefined) clean.pricePerPc = Number(clean.pricePerPc) || 0;
+          return clean;
+        })
+      };
+
+      try {
+        await onUpdateLot(selectedLot.id, sanitizedLot);
+        localStorage.removeItem(CACHE_KEY);
+        lastSavedLotRef.current = draftLot;
+      } finally {
+        setIsSaving(false);
       }
-      return;
-    }
+    }, 1500);
 
-    // Sanitize numeric fields before saving
-    const sanitizedLot = {
-      ...draftLot,
-      sizes: Object.fromEntries(
-        Object.entries(draftLot.sizes || {}).map(([s, q]) => [s, Number(q) || 0])
-      ),
-      processes: (draftLot.processes || []).map(p => {
-        const clean = { ...p };
-        if (clean.pieces !== undefined) clean.pieces = Number(clean.pieces) || 0;
-        if (clean.numButtons !== undefined) clean.numButtons = Number(clean.numButtons) || 0;
-        if (clean.pricePerPc !== undefined) clean.pricePerPc = Number(clean.pricePerPc) || 0;
-        return clean;
-      })
+    return () => {
+      if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
     };
+  }, [draftLot, selectedLot?.id, CACHE_KEY, onUpdateLot]);
 
-    await onUpdateLot(selectedLot.id, sanitizedLot);
+  if (!draftLot) return null;
+
+  const handleClose = async () => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+      debounceTimeoutRef.current = null;
+      if (Object.keys(validationErrors).length === 0 && JSON.stringify(draftLot) !== JSON.stringify(lastSavedLotRef.current)) {
+        setIsSaving(true);
+        const sanitizedLot = {
+          ...draftLot,
+          numColors: Number(draftLot.numColors) || 1,
+          sizes: Object.fromEntries(Object.entries(draftLot.sizes || {}).map(([s, q]) => [s, Number(q) || 0])),
+          processes: (draftLot.processes || []).map(p => {
+            const clean = { ...p };
+            if (clean.pieces !== undefined) clean.pieces = Number(clean.pieces) || 0;
+            if (clean.numButtons !== undefined) clean.numButtons = Number(clean.numButtons) || 0;
+            if (clean.pricePerPc !== undefined) clean.pricePerPc = Number(clean.pricePerPc) || 0;
+            return clean;
+          })
+        };
+        await onUpdateLot(selectedLot.id, sanitizedLot);
+        localStorage.removeItem(CACHE_KEY);
+        setIsSaving(false);
+      }
+    }
     onClose();
   };
 
@@ -132,6 +205,16 @@ export const LotDetailDashboard = ({
         }
       }
     }
+    
+    // Validation for Colors
+    if (updates.numColors !== undefined) {
+      const val = updates.numColors;
+      if (val !== '' && (isNaN(val) || Number(val) < 1)) {
+        alert("Number of colors must be at least 1.");
+        return;
+      }
+    }
+    
     setDraftLot(prev => ({ ...prev, ...updates }));
   };
 
@@ -159,10 +242,12 @@ export const LotDetailDashboard = ({
       processes: (prev.processes || []).map(p => p.id === procId ? { ...p, ...updates } : p)
     }));
   };
-  const totalLotPcs = Object.values(draftLot.sizes || {}).reduce((acc, val) => acc + (Number(val) || 0), 0);
+  const numColors = Number(draftLot.numColors) || 1;
+  const basePcs = Object.values(draftLot.sizes || {}).reduce((acc, val) => acc + (Number(val) || 0), 0);
+  const totalLotPcs = basePcs * numColors;
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} onBack={onClose} title={t('lots.lot_details')} fullScreen>
+    <BottomSheet isOpen={isOpen} onClose={handleClose} onBack={handleClose} title={t('lots.lot_details')} fullScreen>
       <div className="space-y-8 pb-10">
         {/* Header Section */}
         <div className="bg-[#111111] text-white p-6 md:p-10 rounded-[2.5rem] relative overflow-hidden shadow-premium flex flex-col justify-between min-h-[260px]">
@@ -174,7 +259,7 @@ export const LotDetailDashboard = ({
               <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-pulse" />
               <span className={`font-black uppercase text-[#D4AF37] opacity-80 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[10px] tracking-[0.3em]'}`}>{draftLot.brand} {t('lots.batch')}</span>
             </div>
-            <h3 className="text-5xl md:text-8xl font-display font-black tracking-tighter leading-none mb-2">{draftLot.lotNumber}</h3>
+            <h3 className="text-5xl md:text-8xl font-display font-black tracking-tighter leading-none mb-2">#{draftLot.lotNumber}</h3>
           </div>
           <div className="relative z-10 flex items-end justify-between pt-8 border-t border-white/10">
             <div className="flex gap-8">
@@ -186,6 +271,11 @@ export const LotDetailDashboard = ({
             <div className="text-right">
               <p className={`font-black uppercase text-[#D4AF37] mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.quantity_matrix')}</p>
               <h4 className="text-4xl font-display font-black leading-none">{totalLotPcs}</h4>
+              {numColors > 1 && (
+                <p className="text-white/40 text-[10px] font-black uppercase mt-2 tracking-widest">
+                  {numColors} {t('lots.colors', 'COLORS')} × {basePcs} {t('lots.pcs', 'PCS')}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -206,7 +296,19 @@ export const LotDetailDashboard = ({
 
         {/* Quantity Matrix */}
         <div className="space-y-6" ref={matrixRef}>
-          <h4 className={`font-black text-[#111111]/30 ${isHindi ? 'text-[16px] tracking-normal' : 'text-[10px] uppercase tracking-[0.3em]'}`}>{t('lots.quantity_matrix')}</h4>
+          <div className="flex justify-between items-end">
+            <h4 className={`font-black text-[#111111]/30 ${isHindi ? 'text-[16px] tracking-normal' : 'text-[10px] uppercase tracking-[0.3em]'}`}>{t('lots.quantity_matrix')}</h4>
+            <div className="flex items-center gap-2 bg-white rounded-[1rem] px-3 py-1.5 border border-[#111111]/10 shadow-sm">
+               <span className="text-[9px] font-black uppercase text-[#111111]/40 tracking-widest">{t('lots.colors', 'Colors')}</span>
+               <input 
+                 type="number" 
+                 value={draftLot.numColors || 1}
+                 onChange={(e) => updateDraft({ numColors: e.target.value })}
+                 className="w-10 bg-transparent text-center font-black outline-none text-[#111111] text-base"
+                 min="1"
+               />
+            </div>
+          </div>
           <div className="grid grid-cols-4 gap-2 md:gap-3">
             {Object.entries(draftLot.sizes).map(([size, qty]) => (
               <div key={size} className="bg-white border border-[#111111]/5 p-4 rounded-2xl shadow-sm flex flex-col items-center justify-center relative group transition-all hover:border-[#D4AF37]/30">
@@ -242,6 +344,17 @@ export const LotDetailDashboard = ({
               <span className={`font-black uppercase text-[#111111]/20 ${isHindi ? 'text-[9px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.add_size')}</span>
             </button>
           </div>
+
+          {/* Global Notes */}
+          <div className="bg-white border border-[#111111]/5 rounded-[2.5rem] p-6 shadow-premium">
+            <span className={`font-black uppercase text-[#111111]/30 mb-3 block ${isHindi ? 'text-[12px] tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.notes')}</span>
+            <textarea 
+              value={draftLot.notes || ''}
+              onChange={(e) => updateDraft({ notes: e.target.value })}
+              className="w-full h-24 bg-[#F5F5F5] rounded-2xl p-4 text-sm font-bold outline-none resize-none border border-[#111111]/5 focus:border-[#D4AF37]/30 transition-all"
+              placeholder={t('lots.notes_placeholder')}
+            />
+          </div>
         </div>
 
         {/* Production Pipeline */}
@@ -258,28 +371,26 @@ export const LotDetailDashboard = ({
                 draftLot={draftLot}
                 totalLotPcs={totalLotPcs}
                 updateDraftProcess={updateDraftProcess}
-                isCollapsed={collapsedStages[proc.id]}
-                toggleCollapse={() => setCollapsedStages(prev => ({ ...prev, [proc.id]: !prev[proc.id] }))}
                 error={validationErrors[proc.id]}
               />
             ))}
           </div>
         </div>
 
-        {/* Notes & Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white border border-[#111111]/5 rounded-[3rem] p-6 shadow-premium">
-            <span className={`font-black uppercase text-[#111111] mb-4 block ${isHindi ? 'text-[15px] tracking-normal' : 'text-sm'}`}>{t('lots.notes')}</span>
-            <textarea 
-              value={draftLot.notes || ''}
-              onChange={(e) => updateDraft({ notes: e.target.value })}
-              className="w-full h-32 bg-transparent text-[15px] font-bold outline-none resize-none"
-              placeholder={t('lots.notes_placeholder')}
-            />
-          </div>
-          <div className="flex flex-col justify-end gap-4">
-            <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>{t('lots.delete_lot')}</Button>
-            <Button variant="primary" onClick={handleFinalSave}>{t('lots.save_close')}</Button>
+        {/* Actions */}
+        <div className="flex flex-col items-center sm:items-end pt-4">
+          <div className="w-full sm:w-[400px]">
+            <div className="flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#111111]/40 mb-4">
+              {isSaving ? (
+                <><Loader2 size={12} className="animate-spin text-[#D4AF37]" /> {t('common.saving', 'Saving...')}</>
+              ) : (
+                <><Check size={12} className="text-green-500" /> {t('common.saved', 'Saved')}</>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>{t('lots.delete_lot')}</Button>
+              <Button variant="primary" onClick={handleClose}>{t('common.close', 'Close')}</Button>
+            </div>
           </div>
         </div>
       </div>
@@ -327,21 +438,18 @@ const MediaCard = ({ label, url, onClick }) => (
   </div>
 );
 
-const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isCollapsed, toggleCollapse, error }) => {
+const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, error }) => {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const { t, i18n } = useTranslation();
   const isHindi = i18n?.language === 'hi';
   const isOverLimit = Number(proc.pieces) > totalLotPcs;
   const prevPcs = idx > 0 ? Number(draftLot.processes[idx-1].pieces || 0) : totalLotPcs;
   const isDeficit = Number(proc.pieces) > 0 && Number(proc.pieces) < prevPcs;
-  const isComplexStage = ['screening', 'embroidery', 'diamond', 'button'].includes(proc.id);
-  const isCurrentlyCollapsed = isComplexStage ? (isCollapsed ?? true) : false;
 
   return (
     <div 
       id={`proc-${proc.id}`} 
-      onClick={isComplexStage ? toggleCollapse : undefined}
-      className={`p-6 rounded-[2.5rem] border transition-all relative ${isComplexStage ? 'cursor-pointer' : ''} ${error ? 'border-red-500 shadow-[0_20px_50px_rgba(239,68,68,0.1)]' : proc.isDone ? 'bg-green-50/50 border-green-200' : 'bg-white border-[#111111]/5 shadow-premium'}`}
+      className={`p-6 rounded-[2.5rem] border transition-all relative ${error ? 'border-red-500 shadow-[0_20px_50px_rgba(239,68,68,0.1)]' : proc.isDone ? 'bg-green-50/50 border-green-200' : 'bg-white border-[#111111]/5 shadow-premium'}`}
     >
       {error && (
         <div className="absolute -top-3 left-10 bg-red-500 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest z-20 shadow-lg flex items-center gap-1.5 animate-bounce">
@@ -381,53 +489,37 @@ const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isC
         </div>
       </div>
       
-      {/* Expanded Logic */}
-      {isComplexStage && !isCurrentlyCollapsed && (
-        <div className="mt-6 pt-6 border-t border-[#111111]/5" onClick={(e) => e.stopPropagation()}>
-           {/* Screening & Embroidery: Ref & Notes */}
-           {['screening', 'embroidery'].includes(proc.id) && (
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.reference_id')}</span>
-                  <input 
-                    type="text" 
-                    value={proc.billNumber || ''} 
-                    onChange={(e) => updateDraftProcess(proc.id, { billNumber: e.target.value })}
-                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-sm font-bold"
-                    placeholder="Ref / Bill #"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.observations')}</span>
-                  <div 
-                    onClick={() => setIsNotesOpen(true)}
-                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 flex items-center text-sm font-bold text-[#111111] cursor-pointer hover:border-[#111111]/20 transition-all"
-                  >
-                    <span className="truncate opacity-50">{proc.notes || t('lots.notes_short')}</span>
-                  </div>
-                </div>
-             </div>
-           )}
-
-           {/* Diamond: Only Rate */}
-           {proc.id === 'diamond' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.rate_currency')}</span>
-                  <input 
-                    type="number" 
-                    value={proc.pricePerPc || ''} 
-                    onChange={(e) => updateDraftProcess(proc.id, { pricePerPc: e.target.value })}
-                    className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-sm font-bold font-display"
-                    placeholder="₹ 0.00"
-                  />
-                </div>
+      {/* Detail Fields for All Cards */}
+      <div className="mt-6 pt-6 border-t border-[#111111]/5">
+         <div className="grid grid-cols-2 gap-4">
+            {['screening', 'embroidery'].includes(proc.id) && (
+              <div className="space-y-1">
+                <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.reference_id')}</span>
+                <input 
+                  type="text" 
+                  value={proc.billNumber || ''} 
+                  onChange={(e) => updateDraftProcess(proc.id, { billNumber: e.target.value })}
+                  className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-sm font-bold"
+                  placeholder="Ref / Bill #"
+                />
               </div>
-           )}
+            )}
 
-           {/* Button: Hardware & Rate */}
-           {proc.id === 'button' && (
-              <div className="grid grid-cols-2 gap-4">
+            {proc.id === 'diamond' && (
+              <div className="space-y-1">
+                <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.rate_currency')}</span>
+                <input 
+                  type="number" 
+                  value={proc.pricePerPc || ''} 
+                  onChange={(e) => updateDraftProcess(proc.id, { pricePerPc: e.target.value })}
+                  className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 text-sm font-bold font-display"
+                  placeholder="₹ 0.00"
+                />
+              </div>
+            )}
+
+            {proc.id === 'button' && (
+              <>
                 <div className="space-y-1">
                   <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.hardware_pc')}</span>
                   <input 
@@ -448,16 +540,21 @@ const ProcessCard = ({ proc, idx, draftLot, totalLotPcs, updateDraftProcess, isC
                     placeholder="₹ 0.00"
                   />
                 </div>
-              </div>
-           )}
-        </div>
-      )}
+              </>
+            )}
 
-      {isComplexStage && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
-          <div className={`h-1 rounded-full transition-all duration-500 ${isCurrentlyCollapsed ? 'bg-[#111111]/20 w-8' : 'bg-[#D4AF37]/20 w-12'}`} />
-        </div>
-      )}
+            {/* Notes Field (Always Present) */}
+            <div className={`space-y-1 ${!['screening', 'embroidery', 'diamond'].includes(proc.id) ? 'col-span-2' : ''}`}>
+              <span className={`font-black uppercase text-[#111111]/20 ml-2 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[8px] tracking-widest'}`}>{t('lots.observations')}</span>
+              <div 
+                onClick={() => setIsNotesOpen(true)}
+                className="w-full h-10 bg-white border border-[#111111]/5 rounded-xl px-4 flex items-center text-sm font-bold text-[#111111] cursor-pointer hover:border-[#111111]/20 transition-all"
+              >
+                <span className="truncate opacity-50">{proc.notes || t('lots.notes_short')}</span>
+              </div>
+            </div>
+         </div>
+      </div>
 
       <AnimatePresence>
         {isNotesOpen && (

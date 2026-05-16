@@ -96,7 +96,13 @@ export const LotDashboard = ({
                         <p className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] truncate">{lot.brand || 'AMRUT'}</p>
                         <h3 className="text-sm font-bold text-[#111111] truncate">{t('lots.lot_number')}{lot.lotNumber}</h3>
                       </div>
-                      {hasLoss(lot) && <AlertCircle size={14} className="text-red-500" />}
+                      <div className="flex items-center gap-2">
+                        <div className="bg-[#F5F5F5] border border-[#111111]/5 rounded-xl flex flex-col items-center justify-center px-3 py-1 min-w-[40px] h-9 shadow-sm">
+                          <span className="text-[13px] font-display font-black text-[#111111] leading-none">{lot.numColors || 1}</span>
+                          <span className="text-[6px] font-black uppercase tracking-widest text-[#111111]/50 mt-0.5">{t('lots.colors', 'CLR')}</span>
+                        </div>
+                        {hasLoss(lot) && <AlertCircle size={14} className="text-red-500" />}
+                      </div>
                     </div>
                     <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
                       {Object.entries(lot.sizes || {}).map(([size, qty]) => (
@@ -159,9 +165,15 @@ export const LotDashboard = ({
                    </span>
                 </div>
 
-                <div className="absolute bottom-6 left-6 right-6">
-                  <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-1">{lot.brand || 'AMRUT'}</p>
-                  <h3 className="text-3xl font-display font-black text-white tracking-tighter leading-none">{t('lots.lot_number')}{lot.lotNumber}</h3>
+                <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-1">{lot.brand || 'AMRUT'}</p>
+                    <h3 className="text-3xl font-display font-black text-white tracking-tighter leading-none">{t('lots.lot_number')}{lot.lotNumber}</h3>
+                  </div>
+                  <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl flex flex-col items-center justify-center px-4 py-2 min-w-[60px] shadow-lg">
+                    <span className="text-2xl font-display font-black text-white leading-none">{lot.numColors || 1}</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-white/50 mt-1">{t('lots.colors', 'COLORS')}</span>
+                  </div>
                 </div>
               </div>
               <div className="p-8 flex flex-col flex-1 justify-between gap-6">

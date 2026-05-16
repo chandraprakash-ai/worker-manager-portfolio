@@ -15,6 +15,7 @@ This stores all production batches. We embed the `sizes` and `processes` directl
   "designNo": "DSN-884",
   "date": "2026-05-06T00:00:00Z",    // Firestore Timestamp
   "status": "active",                // 'active' | 'completed' | 'archived'
+  "numColors": 3,                    // Color multiplier for total quantity
   "sizes": {
     "S": 100,
     "M": 200,
