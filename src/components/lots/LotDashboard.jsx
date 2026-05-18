@@ -13,6 +13,13 @@ export const LotDashboard = ({
 }) => {
   const { t, i18n } = useTranslation();
   const isHindi = i18n?.language === 'hi';
+  const [brandFilter, setBrandFilter] = React.useState('ALL');
+
+  const filteredLots = allLots.filter(l => {
+    const matchesSearch = (l.lotNumber || '').toLowerCase().includes(search.toLowerCase());
+    if (brandFilter === 'ALL') return matchesSearch;
+    return matchesSearch && (l.brand || '').toUpperCase() === brandFilter;
+  });
 
   const getProgress = (lot) => {
     const processes = (lot.processes && lot.processes.length > 0) 
@@ -43,9 +50,20 @@ export const LotDashboard = ({
           <h2 className={`text-3xl md:text-4xl text-[#111111] font-display font-black tracking-tight leading-none ${isHindi ? 'mt-1' : ''}`}>{t('lots.lot_production')}</h2>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="flex-1 sm:min-w-[300px]">
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-center">
+          <div className="flex-1 sm:min-w-[300px] w-full">
             <SearchBar value={search} onChange={setSearch} placeholder={t('lots.search_placeholder')} />
+          </div>
+          <div className="flex items-center gap-1 p-1 bg-[#F5F5F5] rounded-2xl w-full sm:w-auto overflow-x-auto no-scrollbar">
+            {['ALL', 'RKT', 'KS4U'].map(filter => (
+              <button
+                key={filter}
+                onClick={() => setBrandFilter(filter)}
+                className={`flex-1 sm:flex-initial text-center px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${brandFilter === filter ? 'bg-[#111111] text-[#D4AF37] shadow-lg' : 'text-[#111111]/30 hover:text-[#111111]'}`}
+              >
+                {filter === 'ALL' ? t('common.all', 'ALL') : filter}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -53,10 +71,10 @@ export const LotDashboard = ({
       {/* Summary Metrics - Desktop Only */}
       <div className="hidden lg:grid grid-cols-4 gap-0 rounded-[2.5rem] overflow-hidden border border-[#111111]/5 shadow-premium bg-white">
         {[
-          { label: t('lots.active_lots'), value: allLots.length, icon: <Layout size={16} /> },
-          { label: t('lots.in_progress'), value: allLots.filter(l => getProgress(l) < 100).length, color: 'text-blue-600' },
-          { label: t('lots.total_output'), value: allLots.reduce((acc, lot) => acc + Object.values(lot.sizes || {}).reduce((s, q) => s + (Number(q) || 0), 0), 0), unit: t('lots.pcs') },
-          { label: t('lots.alerts'), value: allLots.filter(hasLoss).length, color: 'text-red-500', icon: <AlertCircle size={16} /> }
+          { label: t('lots.active_lots'), value: filteredLots.length, icon: <Layout size={16} /> },
+          { label: t('lots.in_progress'), value: filteredLots.filter(l => getProgress(l) < 100).length, color: 'text-blue-600' },
+          { label: t('lots.total_output'), value: filteredLots.reduce((acc, lot) => acc + Object.values(lot.sizes || {}).reduce((s, q) => s + (Number(q) || 0), 0), 0), unit: t('lots.pcs') },
+          { label: t('lots.alerts'), value: filteredLots.filter(hasLoss).length, color: 'text-red-500', icon: <AlertCircle size={16} /> }
         ].map((stat, i) => (
           <div key={i} className={`p-8 ${i < 3 ? 'border-r border-[#111111]/5' : ''}`}>
             <div className="flex items-center gap-2 mb-2">
@@ -73,7 +91,7 @@ export const LotDashboard = ({
 
       {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-        {allLots.filter(l => (l.lotNumber || '').toLowerCase().includes(search.toLowerCase())).map(lot => (
+        {filteredLots.map(lot => (
           <React.Fragment key={lot.id}>
             {/* Mobile View: Preferred Horizontal Card */}
             <motion.div 

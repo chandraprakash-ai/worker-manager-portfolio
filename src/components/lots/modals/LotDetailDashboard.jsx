@@ -51,6 +51,18 @@ const hydrateLotData = (lot) => {
   };
 };
 
+const ALL_PIPELINE_STAGES = [
+  { id: 'screening', name: 'Screening' },
+  { id: 'embroidery', name: 'Embroidery' },
+  { id: 'cutting', name: 'Cutting' },
+  { id: 'stitching', name: 'Stitching' },
+  { id: 'interlock', name: 'Interlock' },
+  { id: 'diamond', name: 'Diamond' },
+  { id: 'button', name: 'Button' },
+  { id: 'steampress', name: 'Steam Press' },
+  { id: 'finishing', name: 'Finishing' }
+];
+
 export const LotDetailDashboard = ({
   isOpen,
   onClose,
@@ -64,8 +76,28 @@ export const LotDetailDashboard = ({
   const [validationErrors, setValidationErrors] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [sizeToDelete, setSizeToDelete] = useState(null);
+  const [isEditingStages, setIsEditingStages] = useState(false);
   const { t, i18n } = useTranslation();
   const isHindi = i18n?.language === 'hi';
+
+  // Handle browser back action while editing stages
+  useEffect(() => {
+    if (isEditingStages) {
+      window.history.pushState({ isEditingStages: true }, '');
+
+      const handlePopState = (e) => {
+        setIsEditingStages(false);
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+        if (window.history.state?.isEditingStages) {
+          window.history.back();
+        }
+      };
+    }
+  }, [isEditingStages]);
 
   const [isSaving, setIsSaving] = useState(false);
   const CACHE_KEY = `lot_draft_${selectedLot?.id}`;
@@ -356,11 +388,17 @@ export const LotDetailDashboard = ({
             />
           </div>
         </div>
-
         {/* Production Pipeline */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h4 className={`font-black text-[#111111]/40 ${isHindi ? 'text-[16px] tracking-normal' : 'text-[11px] uppercase tracking-[0.3em]'}`}>{t('lots.production_pipeline')}</h4>
+            <button 
+              onClick={() => setIsEditingStages(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#F5F5F5] rounded-xl hover:bg-[#111111] hover:text-[#D4AF37] text-[#111111]/60 font-black uppercase text-[8px] tracking-widest transition-all"
+            >
+              <Pencil size={10} />
+              {t('lots.edit_stages', 'Edit Stages')}
+            </button>
           </div>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {draftLot.processes.map((proc, idx) => (
@@ -421,6 +459,70 @@ export const LotDetailDashboard = ({
         cancelText={t('common.cancel', 'Cancel')}
       />
 
+      <BottomSheet 
+        isOpen={isEditingStages} 
+        onClose={() => setIsEditingStages(false)} 
+        title={t('lots.edit_stages_title', 'Edit Workflow Stages')}
+      >
+        <div className="space-y-6 pb-8">
+          <p className="text-xs text-[#111111]/40 font-bold leading-relaxed">
+            {t('lots.edit_stages_desc', 'Select the production stages for this lot. Removing an active stage will delete its recorded progress.')}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {ALL_PIPELINE_STAGES.map(stage => {
+              const currentStages = draftLot.stages || [];
+              const isActive = currentStages.includes(stage.id);
+              return (
+                <button
+                  key={stage.id}
+                  type="button"
+                  onClick={() => {
+                    let updatedStages;
+                    let updatedProcesses;
+                    
+                    if (isActive) {
+                      const proc = draftLot.processes.find(p => p.id === stage.id);
+                      if (proc && Number(proc.pieces) > 0) {
+                        if (!window.confirm(`Warning: The stage "${t(`stages.${stage.id}`)}" has ${proc.pieces} pieces recorded. Removing it will erase this data. Proceed?`)) {
+                          return;
+                        }
+                      }
+                      updatedStages = currentStages.filter(id => id !== stage.id);
+                      updatedProcesses = draftLot.processes.filter(p => p.id !== stage.id);
+                    } else {
+                      updatedStages = [...currentStages, stage.id];
+                      updatedProcesses = [
+                        ...draftLot.processes,
+                        {
+                          id: stage.id,
+                          name: stage.name,
+                          pieces: 0,
+                          isDone: false,
+                          billNumber: '',
+                          notes: '',
+                          pricePerPc: 0,
+                          numButtons: 0
+                        }
+                      ];
+                      const order = ALL_PIPELINE_STAGES.map(s => s.id);
+                      updatedProcesses.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+                    }
+                    
+                    updateDraft({ stages: updatedStages, processes: updatedProcesses });
+                  }}
+                  className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${isActive ? 'bg-[#111111] border-[#111111] text-[#D4AF37]' : 'bg-white border-[#F5F5F5] text-[#111111]/30'}`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-[#D4AF37]' : 'bg-[#111111]/10'}`} />
+                  <span className={`font-black uppercase ${isHindi ? 'text-[11px] tracking-normal' : 'text-[10px] tracking-widest'}`}>{t(`stages.${stage.id}`)}</span>
+                </button>
+              );
+            })}
+          </div>
+          <Button fullWidth variant="primary" onClick={() => setIsEditingStages(false)}>
+            {t('common.done', 'Done')}
+          </Button>
+        </div>
+      </BottomSheet>
     </BottomSheet>
   );
 };
