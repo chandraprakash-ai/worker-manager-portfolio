@@ -1,4 +1,4 @@
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { 
   collection, 
   addDoc, 
@@ -28,6 +28,14 @@ const CLOUDINARY_CLOUD_NAME = 'dbuzshnuk';
 const CLOUDINARY_UPLOAD_PRESET = 'amrut_fashion';
 
 // --- UTILS ---
+const getCurrentUserId = () => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Unauthorized access. User session expired.");
+  }
+  return user.uid;
+};
+
 export const uploadImage = async (file, folder = 'misc') => {
   if (!file) return null;
   
@@ -51,25 +59,28 @@ export const uploadImage = async (file, folder = 'misc') => {
 
 export const deleteImage = async (url) => {
   // Unsigned upload presets do not allow client-side deletion for security.
-  // We skip this for Cloudinary. Space is not an issue with 25GB free.
   return;
 };
 
 // --- LOTS ---
 
 export const fetchLots = async () => {
+  const uid = getCurrentUserId();
   const lotsCol = collection(db, COLLECTIONS.LOTS);
-  const snapshot = await getDocs(lotsCol);
+  const q = query(lotsCol, where('userId', '==', uid));
+  const snapshot = await getDocs(q);
   const lots = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  // Sort on client side to avoid needing a Firestore Index
+  // Sort on client side to remain index-free
   return lots.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 };
 
 export const addLot = async (lotData) => {
+  const uid = getCurrentUserId();
   const lotsCol = collection(db, COLLECTIONS.LOTS);
   
   const newLot = {
     ...lotData,
+    userId: uid,
     status: 'active',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -97,15 +108,19 @@ export const deleteLot = async (id) => {
 // --- WORKERS ---
 
 export const fetchWorkers = async () => {
+  const uid = getCurrentUserId();
   const workersCol = collection(db, COLLECTIONS.WORKERS);
-  const snapshot = await getDocs(workersCol);
+  const q = query(workersCol, where('userId', '==', uid));
+  const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
 export const addWorker = async (workerData) => {
+  const uid = getCurrentUserId();
   const workersCol = collection(db, COLLECTIONS.WORKERS);
   const newWorker = {
     ...workerData,
+    userId: uid,
     status: 'active',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -128,20 +143,21 @@ export const deleteWorker = async (id) => {
 // --- TRANSACTIONS ---
 
 export const fetchTransactions = async (workerId = null) => {
+  const uid = getCurrentUserId();
   const txCol = collection(db, COLLECTIONS.TRANSACTIONS);
-  let q;
-  if (workerId) {
-    q = query(txCol, where('workerId', '==', workerId));
-  } else {
-    q = query(txCol); 
-  }
+  const q = query(txCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
-  return snapshot.docs
-    .map(doc => ({ id: doc.id, ...doc.data() }))
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  let txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (workerId) {
+    txs = txs.filter(tx => tx.workerId === workerId);
+  }
+  
+  return txs.sort((a, b) => new Date(b.date) - new Date(a.date));
 };
 
 export const addTransactionsBatch = async (transactionsArray) => {
+  const uid = getCurrentUserId();
   const batch = writeBatch(db);
   const txCol = collection(db, COLLECTIONS.TRANSACTIONS);
   
@@ -150,6 +166,7 @@ export const addTransactionsBatch = async (transactionsArray) => {
     const newDocRef = doc(txCol);
     const newTx = {
       ...txData,
+      userId: uid,
       status: 'active',
       settlementId: null,
       createdAt: serverTimestamp()
@@ -180,20 +197,21 @@ export const deleteTransaction = async (id) => {
 // --- SETTLEMENTS ---
 
 export const fetchSettlements = async (workerId = null) => {
+  const uid = getCurrentUserId();
   const stCol = collection(db, COLLECTIONS.SETTLEMENTS);
-  let q;
-  if (workerId) {
-    q = query(stCol, where('workerId', '==', workerId));
-  } else {
-    q = query(stCol);
-  }
+  const q = query(stCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
-  return snapshot.docs
-    .map(doc => ({ id: doc.id, ...doc.data() }))
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  let settlements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (workerId) {
+    settlements = settlements.filter(s => s.workerId === workerId);
+  }
+  
+  return settlements.sort((a, b) => new Date(b.date) - new Date(a.date));
 };
 
 export const createSettlement = async (workerId, amountPaid, activeTransactions) => {
+  const uid = getCurrentUserId();
   const batch = writeBatch(db);
   const stCol = collection(db, COLLECTIONS.SETTLEMENTS);
   
@@ -202,6 +220,7 @@ export const createSettlement = async (workerId, amountPaid, activeTransactions)
   const txIds = activeTransactions.map(tx => tx.id);
   
   const newSettlement = {
+    userId: uid,
     workerId,
     amountPaid,
     txIds,
@@ -224,22 +243,28 @@ export const createSettlement = async (workerId, amountPaid, activeTransactions)
 // --- INVENTORY ---
 
 export const fetchInventory = async () => {
+  const uid = getCurrentUserId();
   const invCol = collection(db, 'inventory');
-  const snapshot = await getDocs(invCol);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-export const fetchInventoryLogs = async () => {
-  const logCol = collection(db, 'inventory_logs');
-  const q = query(logCol, orderBy('timestamp', 'desc'));
+  const q = query(invCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
+export const fetchInventoryLogs = async () => {
+  const uid = getCurrentUserId();
+  const logCol = collection(db, 'inventory_logs');
+  const q = query(logCol, where('userId', '==', uid));
+  const snapshot = await getDocs(q);
+  const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return logs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+};
+
 export const addInventoryItem = async (itemData) => {
+  const uid = getCurrentUserId();
   const invCol = collection(db, 'inventory');
   const newItem = {
     ...itemData,
+    userId: uid,
     quantity: Number(itemData.quantity),
     minThreshold: Number(itemData.minThreshold),
     createdAt: serverTimestamp()
@@ -249,6 +274,7 @@ export const addInventoryItem = async (itemData) => {
 };
 
 export const updateInventoryStock = async (itemId, delta, reason, currentStock) => {
+  const uid = getCurrentUserId();
   const batch = writeBatch(db);
   const invRef = doc(db, 'inventory', itemId);
   const logCol = collection(db, 'inventory_logs');
@@ -258,6 +284,7 @@ export const updateInventoryStock = async (itemId, delta, reason, currentStock) 
   
   const logRef = doc(logCol);
   batch.set(logRef, {
+    userId: uid,
     itemId,
     delta: Number(delta),
     newQty,
@@ -275,8 +302,10 @@ export const deleteInventoryItem = async (id) => {
 // --- BACKUPS ---
 
 export const createCloudBackup = async (fullData) => {
+  const uid = getCurrentUserId();
   const backupsCol = collection(db, 'backups');
   const newBackup = {
+    userId: uid,
     data: fullData,
     timestamp: serverTimestamp(),
     type: 'snapshot'
@@ -286,9 +315,45 @@ export const createCloudBackup = async (fullData) => {
 };
 
 export const fetchLatestBackup = async () => {
+  const uid = getCurrentUserId();
   const backupsCol = collection(db, 'backups');
-  const q = query(backupsCol, orderBy('timestamp', 'desc'), limit(1));
+  const q = query(backupsCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
-  if (snapshot.empty) return null;
-  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+  const backups = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (backups.length === 0) return null;
+  backups.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+  return backups[0];
+};
+
+export const migrateLegacyData = async () => {
+  const uid = getCurrentUserId();
+  const batch = writeBatch(db);
+  let migrationNeeded = false;
+
+  const collectionsList = [
+    COLLECTIONS.LOTS,
+    COLLECTIONS.WORKERS,
+    COLLECTIONS.TRANSACTIONS,
+    COLLECTIONS.SETTLEMENTS,
+    'inventory',
+    'inventory_logs',
+    'backups'
+  ];
+
+  for (const colName of collectionsList) {
+    const colRef = collection(db, colName);
+    const snapshot = await getDocs(colRef);
+    snapshot.docs.forEach(docSnap => {
+      const data = docSnap.data();
+      if (!data.userId) {
+        batch.update(docSnap.ref, { userId: uid });
+        migrationNeeded = true;
+      }
+    });
+  }
+
+  if (migrationNeeded) {
+    await batch.commit();
+    console.log("Successfully migrated legacy data to user:", uid);
+  }
 };

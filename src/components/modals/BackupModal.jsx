@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Download, Cloud, Check, Loader2, ShieldCheck, Database, FileJson, History, LogOut, Globe } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { createCloudBackup } from '../../lib/firebaseServices';
+import { createCloudBackup, migrateLegacyData } from '../../lib/firebaseServices';
 import { haptic } from '../../utils/haptics';
 import { useTranslation } from 'react-i18next';
 
@@ -13,9 +13,34 @@ export const BackupModal = ({
   const { t, i18n } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
   const [isSnapshotting, setIsSnapshotting] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
   const [lastAction, setLastAction] = useState(null);
 
   const currentLanguage = i18n.language || 'en';
+
+  const hasLegacyData = 
+    allData?.lots?.some(item => !item.userId) ||
+    allData?.workers?.some(item => !item.userId) ||
+    allData?.inventory?.some(item => !item.userId);
+
+  const handleMigration = async () => {
+    if (!window.confirm("Permanently associate all ownerless legacy records with your current account? Run this only on your main production account.")) {
+      return;
+    }
+    setIsMigrating(true);
+    haptic('heavy');
+    try {
+      await migrateLegacyData();
+      haptic('success');
+      alert("Workspace claimed successfully! The app will now reload.");
+      window.location.reload();
+    } catch (err) {
+      console.error("Migration failed:", err);
+      alert("Claim failed: " + err.message);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
 
   const changeLanguage = (lng) => {
     haptic('medium');
@@ -161,6 +186,36 @@ export const BackupModal = ({
               <Check size={12} className="text-green-500" />
            </div>
         </div>
+
+        {/* Claim Legacy Data Button */}
+        {hasLegacyData && (
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={handleMigration}
+            disabled={isMigrating}
+            className="w-full border-2 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-amber-600 py-5 rounded-[2rem] font-bold transition-all flex items-center justify-center gap-3 text-base shadow-sm"
+          >
+            {isMigrating ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <ShieldCheck size={18} />
+            )}
+            Claim Legacy Workspace Data
+          </motion.button>
+        )}
+
+        {/* Logout Button */}
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => {
+            haptic('medium');
+            onLogout();
+          }}
+          className="w-full border-2 border-red-500/10 bg-red-50/50 hover:bg-red-50 text-red-500 py-5 rounded-[2rem] font-bold transition-all flex items-center justify-center gap-3 text-base shadow-sm"
+        >
+          <LogOut size={18} />
+          {t('system.logout')}
+        </motion.button>
 
       </div>
     </div>

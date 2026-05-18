@@ -37,6 +37,16 @@ function App() {
   const user = useAuthStore(state => state.user);
   const login = useAuthStore(state => state.login);
   const logout = useAuthStore(state => state.logout);
+  const authLoading = useAuthStore(state => state.isLoading);
+  const initializeAuth = useAuthStore(state => state.initializeAuth);
+
+  // --- AUTH SHIELD INITIALIZATION ---
+  useEffect(() => {
+    const unsubscribe = initializeAuth();
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [initializeAuth]);
 
   // --- DATA STORE ---
   const workers = useDataStore(state => state.workers);
@@ -402,6 +412,24 @@ function App() {
 
 
   // --- EARLY RETURNS ---
+
+  if (authLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-white">
+        <motion.div 
+          animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.95, 1, 0.95] }} 
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} 
+          className="w-16 h-16 bg-[#D4AF37]/10 rounded-full flex items-center justify-center"
+        >
+          <div className="w-2 h-2 bg-[#D4AF37] rounded-full" />
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
 
   if (error) {
     return (

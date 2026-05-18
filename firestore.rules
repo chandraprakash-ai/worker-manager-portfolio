@@ -1,0 +1,64 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper to check if the record belongs to the authenticated user
+    function ownsDocument(resource) {
+      return resource.data.userId == request.auth.uid;
+    }
+    
+    // Helper to check if the incoming write sets the correct userId
+    function incomingMatchesAuth() {
+      return request.resource.data.userId == request.auth.uid;
+    }
+
+    // Rules for all major isolated collections
+    match /lots/{lotId} {
+      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow create: if isAuthenticated() && incomingMatchesAuth();
+      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+    }
+    
+    match /workers/{workerId} {
+      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow create: if isAuthenticated() && incomingMatchesAuth();
+      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+    }
+    
+    match /transactions/{transactionId} {
+      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow create: if isAuthenticated() && incomingMatchesAuth();
+      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+    }
+    
+    match /settlements/{settlementId} {
+      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow create: if isAuthenticated() && incomingMatchesAuth();
+      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+    }
+    
+    match /inventory/{itemId} {
+      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow create: if isAuthenticated() && incomingMatchesAuth();
+      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+    }
+    
+    match /inventory_logs/{logId} {
+      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow create: if isAuthenticated() && incomingMatchesAuth();
+      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+    }
+    
+    match /backups/{backupId} {
+      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow create: if isAuthenticated() && incomingMatchesAuth();
+      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+    }
+  }
+}

@@ -5,6 +5,7 @@ import {
   persistentMultipleTabManager,
   getFirestore
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 // Replace these with real credentials in .env.local
 const firebaseConfig = {
@@ -39,6 +40,7 @@ try {
 }
 
 export const db = firestoreDb;
+export const auth = getAuth(app);
 
 // Cloudinary used for storage
 // Simple, optimized root collections
