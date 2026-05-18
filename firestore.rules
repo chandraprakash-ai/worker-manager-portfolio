@@ -18,47 +18,73 @@ service cloud.firestore {
       return request.resource.data.userId == request.auth.uid;
     }
 
+    // Helper to check if the record is ownerless (legacy data)
+    function isOwnerless(resource) {
+      return !('userId' in resource.data) || resource.data.userId == null || resource.data.userId == '';
+    }
+
     // Rules for all major isolated collections
     match /lots/{lotId} {
-      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow read, delete: if isAuthenticated() && (ownsDocument(resource) || isOwnerless(resource));
       allow create: if isAuthenticated() && incomingMatchesAuth();
-      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+      allow update: if isAuthenticated() && (
+        (ownsDocument(resource) && incomingMatchesAuth()) ||
+        (isOwnerless(resource) && incomingMatchesAuth())
+      );
     }
     
     match /workers/{workerId} {
-      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow read, delete: if isAuthenticated() && (ownsDocument(resource) || isOwnerless(resource));
       allow create: if isAuthenticated() && incomingMatchesAuth();
-      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+      allow update: if isAuthenticated() && (
+        (ownsDocument(resource) && incomingMatchesAuth()) ||
+        (isOwnerless(resource) && incomingMatchesAuth())
+      );
     }
     
     match /transactions/{transactionId} {
-      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow read, delete: if isAuthenticated() && (ownsDocument(resource) || isOwnerless(resource));
       allow create: if isAuthenticated() && incomingMatchesAuth();
-      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+      allow update: if isAuthenticated() && (
+        (ownsDocument(resource) && incomingMatchesAuth()) ||
+        (isOwnerless(resource) && incomingMatchesAuth())
+      );
     }
     
     match /settlements/{settlementId} {
-      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow read, delete: if isAuthenticated() && (ownsDocument(resource) || isOwnerless(resource));
       allow create: if isAuthenticated() && incomingMatchesAuth();
-      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+      allow update: if isAuthenticated() && (
+        (ownsDocument(resource) && incomingMatchesAuth()) ||
+        (isOwnerless(resource) && incomingMatchesAuth())
+      );
     }
     
     match /inventory/{itemId} {
-      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow read, delete: if isAuthenticated() && (ownsDocument(resource) || isOwnerless(resource));
       allow create: if isAuthenticated() && incomingMatchesAuth();
-      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+      allow update: if isAuthenticated() && (
+        (ownsDocument(resource) && incomingMatchesAuth()) ||
+        (isOwnerless(resource) && incomingMatchesAuth())
+      );
     }
     
     match /inventory_logs/{logId} {
-      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow read, delete: if isAuthenticated() && (ownsDocument(resource) || isOwnerless(resource));
       allow create: if isAuthenticated() && incomingMatchesAuth();
-      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+      allow update: if isAuthenticated() && (
+        (ownsDocument(resource) && incomingMatchesAuth()) ||
+        (isOwnerless(resource) && incomingMatchesAuth())
+      );
     }
     
     match /backups/{backupId} {
-      allow read, delete: if isAuthenticated() && ownsDocument(resource);
+      allow read, delete: if isAuthenticated() && (ownsDocument(resource) || isOwnerless(resource));
       allow create: if isAuthenticated() && incomingMatchesAuth();
-      allow update: if isAuthenticated() && ownsDocument(resource) && incomingMatchesAuth();
+      allow update: if isAuthenticated() && (
+        (ownsDocument(resource) && incomingMatchesAuth()) ||
+        (isOwnerless(resource) && incomingMatchesAuth())
+      );
     }
   }
 }

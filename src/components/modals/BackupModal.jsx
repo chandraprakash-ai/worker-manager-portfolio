@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Download, Cloud, Check, Loader2, ShieldCheck, Database, FileJson, History, LogOut, Globe } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { createCloudBackup, migrateLegacyData } from '../../lib/firebaseServices';
+import { createCloudBackup, migrateLegacyData, checkHasLegacyData } from '../../lib/firebaseServices';
 import { haptic } from '../../utils/haptics';
 import { useTranslation } from 'react-i18next';
 
@@ -15,13 +15,21 @@ export const BackupModal = ({
   const [isSnapshotting, setIsSnapshotting] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
   const [lastAction, setLastAction] = useState(null);
+  const [hasLegacyData, setHasLegacyData] = useState(false);
 
   const currentLanguage = i18n.language || 'en';
 
-  const hasLegacyData = 
-    allData?.lots?.some(item => !item.userId) ||
-    allData?.workers?.some(item => !item.userId) ||
-    allData?.inventory?.some(item => !item.userId);
+  React.useEffect(() => {
+    const scanLegacy = async () => {
+      try {
+        const legacyFound = await checkHasLegacyData();
+        setHasLegacyData(legacyFound);
+      } catch (err) {
+        console.error("Scan legacy error:", err);
+      }
+    };
+    scanLegacy();
+  }, [allData]);
 
   const handleMigration = async () => {
     if (!window.confirm("Permanently associate all ownerless legacy records with your current account? Run this only on your main production account.")) {

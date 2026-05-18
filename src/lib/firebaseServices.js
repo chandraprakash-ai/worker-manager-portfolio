@@ -29,11 +29,28 @@ const CLOUDINARY_UPLOAD_PRESET = 'amrut_fashion';
 
 // --- UTILS ---
 const getCurrentUserId = () => {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error("Unauthorized access. User session expired.");
-  }
-  return user.uid;
+  return new Promise((resolve, reject) => {
+    if (auth.currentUser) {
+      resolve(auth.currentUser.uid);
+      return;
+    }
+    
+    // Fallback/timeout to prevent hanging if no user is authenticated
+    const timeout = setTimeout(() => {
+      unsubscribe();
+      reject(new Error("Unauthorized access. User session expired."));
+    }, 4000);
+
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      clearTimeout(timeout);
+      unsubscribe();
+      if (user) {
+        resolve(user.uid);
+      } else {
+        reject(new Error("Unauthorized access. User session expired."));
+      }
+    });
+  });
 };
 
 export const uploadImage = async (file, folder = 'misc') => {
@@ -65,7 +82,7 @@ export const deleteImage = async (url) => {
 // --- LOTS ---
 
 export const fetchLots = async () => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const lotsCol = collection(db, COLLECTIONS.LOTS);
   const q = query(lotsCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
@@ -75,7 +92,7 @@ export const fetchLots = async () => {
 };
 
 export const addLot = async (lotData) => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const lotsCol = collection(db, COLLECTIONS.LOTS);
   
   const newLot = {
@@ -108,7 +125,7 @@ export const deleteLot = async (id) => {
 // --- WORKERS ---
 
 export const fetchWorkers = async () => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const workersCol = collection(db, COLLECTIONS.WORKERS);
   const q = query(workersCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
@@ -116,7 +133,7 @@ export const fetchWorkers = async () => {
 };
 
 export const addWorker = async (workerData) => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const workersCol = collection(db, COLLECTIONS.WORKERS);
   const newWorker = {
     ...workerData,
@@ -143,7 +160,7 @@ export const deleteWorker = async (id) => {
 // --- TRANSACTIONS ---
 
 export const fetchTransactions = async (workerId = null) => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const txCol = collection(db, COLLECTIONS.TRANSACTIONS);
   const q = query(txCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
@@ -157,7 +174,7 @@ export const fetchTransactions = async (workerId = null) => {
 };
 
 export const addTransactionsBatch = async (transactionsArray) => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const batch = writeBatch(db);
   const txCol = collection(db, COLLECTIONS.TRANSACTIONS);
   
@@ -197,7 +214,7 @@ export const deleteTransaction = async (id) => {
 // --- SETTLEMENTS ---
 
 export const fetchSettlements = async (workerId = null) => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const stCol = collection(db, COLLECTIONS.SETTLEMENTS);
   const q = query(stCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
@@ -211,7 +228,7 @@ export const fetchSettlements = async (workerId = null) => {
 };
 
 export const createSettlement = async (workerId, amountPaid, activeTransactions) => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const batch = writeBatch(db);
   const stCol = collection(db, COLLECTIONS.SETTLEMENTS);
   
@@ -243,7 +260,7 @@ export const createSettlement = async (workerId, amountPaid, activeTransactions)
 // --- INVENTORY ---
 
 export const fetchInventory = async () => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const invCol = collection(db, 'inventory');
   const q = query(invCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
@@ -251,7 +268,7 @@ export const fetchInventory = async () => {
 };
 
 export const fetchInventoryLogs = async () => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const logCol = collection(db, 'inventory_logs');
   const q = query(logCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
@@ -260,7 +277,7 @@ export const fetchInventoryLogs = async () => {
 };
 
 export const addInventoryItem = async (itemData) => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const invCol = collection(db, 'inventory');
   const newItem = {
     ...itemData,
@@ -274,7 +291,7 @@ export const addInventoryItem = async (itemData) => {
 };
 
 export const updateInventoryStock = async (itemId, delta, reason, currentStock) => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const batch = writeBatch(db);
   const invRef = doc(db, 'inventory', itemId);
   const logCol = collection(db, 'inventory_logs');
@@ -302,7 +319,7 @@ export const deleteInventoryItem = async (id) => {
 // --- BACKUPS ---
 
 export const createCloudBackup = async (fullData) => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const backupsCol = collection(db, 'backups');
   const newBackup = {
     userId: uid,
@@ -315,7 +332,7 @@ export const createCloudBackup = async (fullData) => {
 };
 
 export const fetchLatestBackup = async () => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const backupsCol = collection(db, 'backups');
   const q = query(backupsCol, where('userId', '==', uid));
   const snapshot = await getDocs(q);
@@ -326,7 +343,7 @@ export const fetchLatestBackup = async () => {
 };
 
 export const migrateLegacyData = async () => {
-  const uid = getCurrentUserId();
+  const uid = await getCurrentUserId();
   const batch = writeBatch(db);
   let migrationNeeded = false;
 
@@ -355,5 +372,19 @@ export const migrateLegacyData = async () => {
   if (migrationNeeded) {
     await batch.commit();
     console.log("Successfully migrated legacy data to user:", uid);
+  }
+};
+
+export const checkHasLegacyData = async () => {
+  try {
+    const lotsCol = collection(db, COLLECTIONS.LOTS);
+    const snapshot = await getDocs(lotsCol);
+    return snapshot.docs.some(docSnap => {
+      const data = docSnap.data();
+      return !data.userId || data.userId === '';
+    });
+  } catch (err) {
+    console.error("checkHasLegacyData error:", err);
+    return false;
   }
 };
