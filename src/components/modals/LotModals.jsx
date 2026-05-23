@@ -43,7 +43,8 @@ export const LotModals = ({
 
     let finalLotData = { 
       ...sourceData,
-      sizes: sanitizedSizes
+      sizes: sanitizedSizes,
+      numColors: Number(sourceData.numColors) || 1
     };
 
     const activeSizes = Object.keys(finalLotData.sizes || {});
@@ -66,7 +67,6 @@ export const LotModals = ({
     setLocalError('');
 
     try {
-      let finalLotData = { ...sourceData };
       
       // Process pending uploads
       for (const [type, file] of Object.entries(pendingFiles)) {

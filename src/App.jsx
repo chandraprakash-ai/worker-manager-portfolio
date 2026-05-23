@@ -177,7 +177,8 @@ function App() {
     itemImage: null,
     sampleImage: null,
     stages: [],
-    processes: []
+    processes: [],
+    numColors: 1
   });
 
   // --- EFFECTS ---
@@ -398,7 +399,8 @@ function App() {
         itemImage: null,
         sampleImage: null,
         stages: [],
-        processes: []
+        processes: [],
+        numColors: 1
       });
       
       closeSheet();

@@ -143,6 +143,7 @@
     "awaiting_production": "Awaiting Production Input",
     "select_brand": "Select Brand / Label",
     "lot_batch_id": "Lot / Batch ID",
+    "colors": "Colors",
     "select_sizes": "Select Sizes",
     "update_design": "Update Design",
     "add_design": "Add Design",
