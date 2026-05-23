@@ -83,30 +83,16 @@ export const LotInitializationSheet = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={`block font-black text-[#111111]/30 uppercase mb-3 ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.lot_batch_id')}</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={newLot.lotNumber} 
-                    onChange={(e) => setNewLot({ ...newLot, lotNumber: e.target.value })} 
-                    className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-lg uppercase" 
-                    placeholder="AF-2024-01" 
-                  />
-                </div>
-                <div>
-                  <label className={`block font-black text-[#111111]/30 uppercase mb-3 ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.colors', 'Colors')}</label>
-                  <input 
-                    type="number" 
-                    required 
-                    min="1"
-                    value={newLot.numColors || 1} 
-                    onChange={(e) => setNewLot({ ...newLot, numColors: Number(e.target.value) || 1 })} 
-                    className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-lg" 
-                    placeholder="1" 
-                  />
-                </div>
+              <div>
+                <label className={`block font-black text-[#111111]/30 uppercase mb-3 ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.lot_batch_id')}</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={newLot.lotNumber} 
+                  onChange={(e) => setNewLot({ ...newLot, lotNumber: e.target.value })} 
+                  className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl uppercase" 
+                  placeholder="AF-2024-01" 
+                />
               </div>
 
               <div className="space-y-3">
@@ -171,6 +157,19 @@ export const LotInitializationSheet = ({
                  </div>
                ))}
              </div>
+          </div>
+
+          <div className="space-y-4">
+             <label className={`block font-black text-[#111111]/30 uppercase ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.colors', 'Colors')}</label>
+             <input 
+               type="number" 
+               required 
+               min="1"
+               value={newLot.numColors || 1} 
+               onChange={(e) => setNewLot({ ...newLot, numColors: Number(e.target.value) || 1 })} 
+               className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl" 
+               placeholder="1" 
+             />
           </div>
 
           <div className="space-y-4">
