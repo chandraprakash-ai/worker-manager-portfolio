@@ -50,7 +50,7 @@ export const useDataStore = create(
         const workers = await fs.fetchWorkers();
         set({ allWorkers: workers, workers });
       } catch (err) {
-        set({ error: err.message });
+        console.error("Error fetching workers:", err);
       }
     },
 
@@ -72,7 +72,8 @@ export const useDataStore = create(
         });
         return newWorker.id;
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to add worker: ${err.message}`);
       }
     },
 
@@ -85,7 +86,8 @@ export const useDataStore = create(
           return { allWorkers: updated, workers: updated, isLoading: false };
         });
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to update worker: ${err.message}`);
       }
     },
 
@@ -99,7 +101,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to delete worker: ${err.message}`);
       }
     },
 
@@ -113,7 +116,8 @@ export const useDataStore = create(
         }
         set({ transactions: filtered, allTransactions: txs, isLoading: false });
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        console.error("Error fetching transactions:", err);
       }
     },
 
@@ -128,7 +132,8 @@ export const useDataStore = create(
         }));
         return newTx.id;
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to add transaction: ${err.message}`);
       }
     },
 
@@ -142,7 +147,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to save bulk entries: ${err.message}`);
       }
     },
 
@@ -156,7 +162,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to update transaction: ${err.message}`);
       }
     },
 
@@ -170,7 +177,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to delete transaction: ${err.message}`);
       }
     },
 
@@ -188,7 +196,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to settle worker: ${err.message}`);
       }
     },
 
@@ -201,7 +210,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to add inventory item: ${err.message}`);
       }
     },
 
@@ -213,7 +223,8 @@ export const useDataStore = create(
         // Refresh full state to get logs
         await get().initializeData();
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to update inventory stock: ${err.message}`);
       }
     },
 
@@ -226,7 +237,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to delete inventory item: ${err.message}`);
       }
     },
 
@@ -239,7 +251,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to add lot: ${err.message}`);
       }
     },
 
@@ -252,7 +265,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to update lot: ${err.message}`);
       }
     },
 
@@ -287,7 +301,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to update workflow process: ${err.message}`);
       }
     },
 
@@ -300,7 +315,8 @@ export const useDataStore = create(
           isLoading: false
         }));
       } catch (err) {
-        set({ error: err.message, isLoading: false });
+        set({ isLoading: false });
+        alert(`Failed to delete lot: ${err.message}`);
       }
     },
   })
