@@ -334,7 +334,7 @@ export const LotDetailDashboard = ({
                <span className="text-[9px] font-black uppercase text-[#111111]/40 tracking-widest">{t('lots.colors', 'Colors')}</span>
                <input 
                  type="number" 
-                 value={draftLot.numColors || 1}
+                 value={draftLot.numColors ?? ''}
                  onChange={(e) => updateDraft({ numColors: e.target.value })}
                  className="w-10 bg-transparent text-center font-black outline-none text-[#111111] text-base"
                  min="1"

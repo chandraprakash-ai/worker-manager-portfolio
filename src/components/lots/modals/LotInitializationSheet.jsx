@@ -165,9 +165,12 @@ export const LotInitializationSheet = ({
                type="number" 
                required 
                min="1"
-               value={newLot.numColors || 1} 
-               onChange={(e) => setNewLot({ ...newLot, numColors: Number(e.target.value) || 1 })} 
-               className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl" 
+               value={newLot.numColors ?? ''} 
+               onChange={(e) => {
+                 const val = e.target.value;
+                 setNewLot({ ...newLot, numColors: val === '' ? '' : Number(val) });
+               }} 
+               className="w-32 bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl text-center" 
                placeholder="1" 
              />
           </div>
