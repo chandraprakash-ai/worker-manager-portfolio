@@ -55,6 +55,7 @@ function App() {
   const allSettlements = useDataStore(state => state.allSettlements);
   const transactions = useDataStore(state => state.transactions);
   const initializeData = useDataStore(state => state.initializeData);
+  const resetStore = useDataStore(state => state.resetStore);
   const isLoading = useDataStore(state => state.isLoading);
   const error = useDataStore(state => state.error);
 
@@ -183,8 +184,12 @@ function App() {
 
   // --- EFFECTS ---
   useEffect(() => {
-    initializeData();
-  }, [initializeData]);
+    if (user) {
+      initializeData();
+    } else {
+      resetStore();
+    }
+  }, [initializeData, resetStore, user]);
 
   useEffect(() => {
     if (selectedWorkerId) {

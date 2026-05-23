@@ -319,5 +319,20 @@ export const useDataStore = create(
         alert(`Failed to delete lot: ${err.message}`);
       }
     },
+
+    resetStore: () => {
+      set({
+        allWorkers: [],
+        allTransactions: [],
+        allSettlements: [],
+        allInventory: [],
+        allInventoryLogs: [],
+        allLots: [],
+        workers: [],
+        transactions: [],
+        isLoading: false,
+        error: null
+      });
+    },
   })
 );
