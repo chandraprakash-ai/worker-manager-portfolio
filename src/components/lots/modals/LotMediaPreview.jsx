@@ -48,8 +48,11 @@ export const LotMediaPreview = ({
 
   return (
     <div className="fixed inset-0 z-[9999] bg-[#111111] flex flex-col items-center justify-center p-4 backdrop-blur-3xl animate-in fade-in duration-300">
-      <button onClick={handleClose} className="absolute top-8 right-8 w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white">
-        <X size={32} />
+      <button 
+        onClick={handleClose} 
+        className="absolute top-6 right-6 z-50 w-12 h-12 md:w-14 md:h-14 bg-white/10 hover:bg-white/20 active:scale-90 rounded-2xl flex items-center justify-center text-white transition-all"
+      >
+        <X size={28} className="md:size-[32px]" />
       </button>
       
       <div className="flex flex-col items-center gap-10 w-full max-w-5xl">

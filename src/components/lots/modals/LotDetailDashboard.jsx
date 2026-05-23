@@ -139,6 +139,25 @@ export const LotDetailDashboard = ({
     }
   }, [selectedLot?.id]);
 
+  // Sync draft images when they are updated from the preview modal/database
+  useEffect(() => {
+    if (selectedLot) {
+      setDraftLot(prev => {
+        if (!prev) return hydrateLotData(selectedLot);
+        if (prev.itemImage !== selectedLot.itemImage || prev.sampleImage !== selectedLot.sampleImage) {
+          const updated = {
+            ...prev,
+            itemImage: selectedLot.itemImage,
+            sampleImage: selectedLot.sampleImage
+          };
+          lastSavedLotRef.current = updated;
+          return updated;
+        }
+        return prev;
+      });
+    }
+  }, [selectedLot?.itemImage, selectedLot?.sampleImage]);
+
   useEffect(() => {
     if (!draftLot || draftLot.id !== selectedLot?.id) return;
     
