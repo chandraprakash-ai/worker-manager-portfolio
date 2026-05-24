@@ -123,8 +123,8 @@ export const HomeDashboard = ({ workers, lots, transactions, navigate }) => {
              {/* Header Row */}
              <div className="grid grid-cols-3 text-right text-[10px] font-black uppercase tracking-widest text-[#111111]/30 pb-2.5 border-b border-[#111111]/5">
                 <div className="text-left">{t('dashboard.metric', 'Metric')}</div>
-                <div>KS4U Brand</div>
-                <div>RKT Brand</div>
+                <div>KS4U</div>
+                <div>RKT</div>
              </div>
 
              {/* Total Row */}
