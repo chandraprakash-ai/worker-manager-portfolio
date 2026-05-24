@@ -13,7 +13,7 @@ export const LotAddSizesSheet = ({
   const isHindi = i18n?.language === 'hi';
   const [extendSizes, setExtendSizes] = useState({});
   const [error, setError] = useState('');
-  const allAvailableSizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+  const allAvailableSizes = ['36', '38', '40', '42', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 
   if (!selectedLot) return null;
 

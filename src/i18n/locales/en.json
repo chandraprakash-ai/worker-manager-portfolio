@@ -34,7 +34,9 @@
     "balance": "Balance",
     "pieces": "Pieces",
     "date": "Date",
-    "notes": "Notes"
+    "notes": "Notes",
+    "all": "All",
+    "cleared": "Cleared"
   },
   "workers": {
     "add_worker": "Add New Worker",
@@ -152,7 +154,13 @@
     "change_sample": "Change Sample",
     "attach_sample": "Attach Sample Photo",
     "planned_production": "Planned Production",
-    "init_cycle": "Initialize Production Cycle"
+    "init_cycle": "Initialize Production Cycle",
+    "average": "Average",
+    "avg": "Avg",
+    "rate": "Rate",
+    "cleared_lots": "Cleared Lots",
+    "clear_lot": "Clear / Finish Lot",
+    "activate_lot": "Activate Lot"
   },
   "stages": {
     "cutting": "Cutting",

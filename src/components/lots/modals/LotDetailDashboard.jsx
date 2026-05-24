@@ -5,6 +5,7 @@ import { Tag, Image, Check, X, Pencil, Loader2, Plus, AlertCircle } from 'lucide
 import { BottomSheet } from '../../ui/BottomSheet';
 import { Button } from '../../ui/Button';
 import { ConfirmModal } from '../../ui/ConfirmModal';
+import { getOptimizedImageUrl } from '../../../utils/cloudinary';
 
 const hydrateLotData = (lot) => {
   if (!lot) return null;
@@ -191,6 +192,8 @@ export const LotDetailDashboard = ({
       const sanitizedLot = {
         ...draftLot,
         numColors: Number(draftLot.numColors) || 1,
+        avg: draftLot.avg !== undefined && draftLot.avg !== '' ? Number(draftLot.avg) : '',
+        rate: draftLot.rate !== undefined && draftLot.rate !== '' ? Number(draftLot.rate) : '',
         sizes: Object.fromEntries(
           Object.entries(draftLot.sizes || {}).map(([s, q]) => [s, Number(q) || 0])
         ),
@@ -228,6 +231,8 @@ export const LotDetailDashboard = ({
         const sanitizedLot = {
           ...draftLot,
           numColors: Number(draftLot.numColors) || 1,
+          avg: draftLot.avg !== undefined && draftLot.avg !== '' ? Number(draftLot.avg) : '',
+          rate: draftLot.rate !== undefined && draftLot.rate !== '' ? Number(draftLot.rate) : '',
           sizes: Object.fromEntries(Object.entries(draftLot.sizes || {}).map(([s, q]) => [s, Number(q) || 0])),
           processes: (draftLot.processes || []).map(p => {
             const clean = { ...p };
@@ -243,6 +248,11 @@ export const LotDetailDashboard = ({
       }
     }
     onClose();
+  };
+
+  const handleToggleClear = (shouldClear) => {
+    const newStatus = shouldClear ? 'cleared' : 'active';
+    updateDraft({ status: newStatus });
   };
 
   const updateDraft = (updates) => {
@@ -262,6 +272,24 @@ export const LotDetailDashboard = ({
       const val = updates.numColors;
       if (val !== '' && (isNaN(val) || Number(val) < 1)) {
         alert("Number of colors must be at least 1.");
+        return;
+      }
+    }
+
+    // Validation for Average
+    if (updates.avg !== undefined) {
+      const val = updates.avg;
+      if (val !== '' && (isNaN(val) || Number(val) < 0)) {
+        alert("Average must be a positive number.");
+        return;
+      }
+    }
+
+    // Validation for Rate
+    if (updates.rate !== undefined) {
+      const val = updates.rate;
+      if (val !== '' && (isNaN(val) || Number(val) < 0)) {
+        alert("Rate must be a positive number.");
         return;
       }
     }
@@ -313,11 +341,23 @@ export const LotDetailDashboard = ({
             <h3 className="text-5xl md:text-8xl font-display font-black tracking-tighter leading-none mb-2">#{draftLot.lotNumber}</h3>
           </div>
           <div className="relative z-10 flex items-end justify-between pt-8 border-t border-white/10">
-            <div className="flex gap-8">
+            <div className="flex flex-wrap gap-x-8 gap-y-4">
               <div className="flex flex-col">
                 <span className={`font-black uppercase text-white/30 mb-1 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.status')}</span>
                 <span className={`font-black uppercase text-[#D4AF37] ${isHindi ? 'text-[15px] tracking-normal' : 'text-sm'}`}>{t(`common.${draftLot.status?.toLowerCase() || 'active'}`)}</span>
               </div>
+              {draftLot.avg !== undefined && draftLot.avg !== '' && (
+                <div className="flex flex-col">
+                  <span className={`font-black uppercase text-white/30 mb-1 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.average')}</span>
+                  <span className="font-black text-sm text-white">{draftLot.avg}</span>
+                </div>
+              )}
+              {draftLot.rate !== undefined && draftLot.rate !== '' && (
+                <div className="flex flex-col">
+                  <span className={`font-black uppercase text-white/30 mb-1 ${isHindi ? 'text-[10px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.rate')}</span>
+                  <span className="font-black text-sm text-white">₹{draftLot.rate}</span>
+                </div>
+              )}
             </div>
             <div className="text-right">
               <p className={`font-black uppercase text-[#D4AF37] mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.quantity_matrix')}</p>
@@ -345,20 +385,48 @@ export const LotDetailDashboard = ({
           />
         </div>
 
+        {/* Colors, Avg, Rate Inputs */}
+        <div className="grid grid-cols-3 gap-4">
+           <div className="space-y-4">
+              <label className={`block font-black text-[#111111]/30 uppercase ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.colors', 'Colors')}</label>
+              <input 
+                type="number" 
+                required 
+                min="1"
+                value={draftLot.numColors ?? ''} 
+                onChange={(e) => updateDraft({ numColors: e.target.value })} 
+                className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl text-center" 
+                placeholder="1" 
+              />
+           </div>
+           <div className="space-y-4">
+              <label className={`block font-black text-[#111111]/30 uppercase ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.average', 'Average')}</label>
+              <input 
+                type="number" 
+                step="0.01"
+                value={draftLot.avg ?? ''} 
+                onChange={(e) => updateDraft({ avg: e.target.value })} 
+                className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl text-center" 
+                placeholder="0.00" 
+              />
+           </div>
+           <div className="space-y-4">
+              <label className={`block font-black text-[#111111]/30 uppercase ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.rate', 'Rate')}</label>
+              <input 
+                type="number" 
+                step="0.01"
+                value={draftLot.rate ?? ''} 
+                onChange={(e) => updateDraft({ rate: e.target.value })} 
+                className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl text-center" 
+                placeholder="0.00" 
+              />
+           </div>
+        </div>
+
         {/* Quantity Matrix */}
         <div className="space-y-6" ref={matrixRef}>
           <div className="flex justify-between items-end">
             <h4 className={`font-black text-[#111111]/30 ${isHindi ? 'text-[16px] tracking-normal' : 'text-[10px] uppercase tracking-[0.3em]'}`}>{t('lots.quantity_matrix')}</h4>
-            <div className="flex items-center gap-2 bg-white rounded-[1rem] px-3 py-1.5 border border-[#111111]/10 shadow-sm">
-               <span className="text-[9px] font-black uppercase text-[#111111]/40 tracking-widest">{t('lots.colors', 'Colors')}</span>
-               <input 
-                 type="number" 
-                 value={draftLot.numColors ?? ''}
-                 onChange={(e) => updateDraft({ numColors: e.target.value })}
-                 className="w-10 bg-transparent text-center font-black outline-none text-[#111111] text-base"
-                 min="1"
-               />
-            </div>
           </div>
           <div className="grid grid-cols-4 gap-2 md:gap-3">
             {Object.entries(draftLot.sizes).map(([size, qty]) => (
@@ -442,6 +510,27 @@ export const LotDetailDashboard = ({
                 <><Loader2 size={12} className="animate-spin text-[#D4AF37]" /> {t('common.saving', 'Saving...')}</>
               ) : (
                 <><Check size={12} className="text-green-500" /> {t('common.saved', 'Saved')}</>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              {draftLot.status === 'cleared' ? (
+                <Button 
+                  variant="outline" 
+                  fullWidth 
+                  className="col-span-2 text-green-600 border-green-600 hover:bg-green-50"
+                  onClick={() => handleToggleClear(false)}
+                >
+                  {t('lots.activate_lot', 'Activate Lot')}
+                </Button>
+              ) : (
+                <Button 
+                  variant="secondary" 
+                  fullWidth 
+                  className="col-span-2"
+                  onClick={() => handleToggleClear(true)}
+                >
+                  {t('lots.clear_lot', 'Clear / Finish Lot')}
+                </Button>
               )}
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -549,7 +638,7 @@ export const LotDetailDashboard = ({
 const MediaCard = ({ label, url, onClick }) => (
   <div onClick={onClick} className="bg-white border border-[#111111]/10 rounded-[2.5rem] flex flex-col items-center justify-center shadow-premium aspect-video relative overflow-hidden cursor-pointer hover:border-[#D4AF37]/40">
     {url ? (
-      <img src={url} className="absolute inset-0 w-full h-full object-cover" />
+      <img src={getOptimizedImageUrl(url, 600)} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" alt="" />
     ) : (
       <div className="flex flex-col items-center gap-3">
         <Image size={24} className="text-[#111111]/20" />

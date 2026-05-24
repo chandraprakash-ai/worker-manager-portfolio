@@ -59,6 +59,7 @@ export const LotMediaPreview = ({
         <div className="relative group max-h-[70vh] overflow-hidden rounded-[3rem] shadow-2xl border border-white/10">
           <img 
             src={previews[previewData.type] || previewData.url} 
+            decoding="async"
             className="max-w-full max-h-[70vh] object-contain"
             alt="Preview"
           />

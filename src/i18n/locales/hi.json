@@ -34,7 +34,9 @@
     "balance": "बकाया",
     "pieces": "पीस",
     "date": "तारीख",
-    "notes": "नोट्स"
+    "notes": "नोट्स",
+    "all": "सभी",
+    "cleared": "क्लियर किया हुआ"
   },
   "workers": {
     "add_worker": "नया कर्मचारी जोड़ें",
@@ -152,7 +154,13 @@
     "change_sample": "सैंपल बदलें",
     "attach_sample": "सैंपल फोटो जोड़ें",
     "planned_production": "नियोजित उत्पादन",
-    "init_cycle": "उत्पादन चक्र शुरू करें"
+    "init_cycle": "उत्पादन चक्र शुरू करें",
+    "average": "औसत",
+    "avg": "औसत",
+    "rate": "दर",
+    "cleared_lots": "क्लियर लॉट",
+    "clear_lot": "लॉट क्लियर / समाप्त करें",
+    "activate_lot": "लॉट सक्रिय करें"
   },
   "stages": {
     "cutting": "कटिंग",

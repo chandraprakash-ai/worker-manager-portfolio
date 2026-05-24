@@ -44,7 +44,9 @@ export const LotModals = ({
     let finalLotData = { 
       ...sourceData,
       sizes: sanitizedSizes,
-      numColors: Number(sourceData.numColors) || 1
+      numColors: Number(sourceData.numColors) || 1,
+      avg: sourceData.avg !== undefined && sourceData.avg !== '' ? Number(sourceData.avg) : '',
+      rate: sourceData.rate !== undefined && sourceData.rate !== '' ? Number(sourceData.rate) : ''
     };
 
     const activeSizes = Object.keys(finalLotData.sizes || {});

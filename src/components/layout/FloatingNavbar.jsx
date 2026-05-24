@@ -23,19 +23,15 @@ export const FloatingNavbar = () => {
   };
 
   const handleNavigate = (path) => {
-    haptic('light');
+    haptic('soft');
     // For main navigation, we use replace: true to prevent history stack bloat
     // this gives it a "Native App" feel where tabs don't create back-loops
     navigate(path, { replace: true });
   };
 
   return (
-    <div className="fixed bottom-8 left-0 right-0 z-[100] flex justify-center px-4 no-print">
-      <motion.nav 
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="bg-[#111111]/90 backdrop-blur-xl border border-white/10 p-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between w-full max-w-[400px]"
-      >
+    <div className="fixed bottom-0 left-0 right-0 w-full z-[100] bg-white border-t border-[#111111]/5 flex justify-center no-print h-16 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
+      <nav className="flex items-center justify-between w-full max-w-lg px-6 h-full">
         {navItems.map((item) => {
           const active = isActive(item.path);
           const Icon = item.icon;
@@ -44,32 +40,30 @@ export const FloatingNavbar = () => {
             <button
               key={item.id}
               onClick={() => handleNavigate(item.path)}
-              className="relative flex-1 flex flex-col items-center justify-center h-16 transition-all group"
+              className="relative flex-1 flex flex-col items-center justify-center h-full transition-all group"
             >
-              <div className="relative w-full h-full flex flex-col items-center justify-center">
-                {active && (
-                  <motion.div 
-                    layoutId="activeTab"
-                    className="absolute w-14 h-14 bg-[#D4AF37] rounded-full"
-                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                
-                <div className="relative z-10 flex flex-col items-center">
-                  <Icon 
-                    size={20} 
-                    className={`transition-colors duration-300 ${active ? 'text-[#111111]' : 'text-white/40 group-hover:text-white/70'}`} 
-                    strokeWidth={active ? 3 : 2}
-                  />
-                  <span className={`font-black mt-1.5 transition-colors duration-300 ${active ? 'text-[#111111]' : 'text-white/20 group-hover:text-white/40'} ${isHindi ? 'text-[12px] tracking-normal' : 'text-[7px] uppercase tracking-widest'}`}>
-                    {item.label}
-                  </span>
-                </div>
+              {active && (
+                <motion.div 
+                  layoutId="activeTabIndicator"
+                  className="absolute top-0 w-8 h-0.5 bg-[#D4AF37] rounded-full"
+                  transition={{ type: 'spring', bounce: 0.1, duration: 0.4 }}
+                />
+              )}
+              
+              <div className="flex flex-col items-center justify-center gap-1">
+                <Icon 
+                  size={18} 
+                  className={`transition-colors duration-300 ${active ? 'text-[#111111]' : 'text-[#111111]/30 group-hover:text-[#111111]/60'}`} 
+                  strokeWidth={active ? 3 : 2}
+                />
+                <span className={`font-black transition-colors duration-300 ${active ? 'text-[#111111]' : 'text-[#111111]/30 group-hover:text-[#111111]/50'} ${isHindi ? 'text-[11px] tracking-normal' : 'text-[8px] uppercase tracking-widest'}`}>
+                  {item.label}
+                </span>
               </div>
             </button>
           );
         })}
-      </motion.nav>
+      </nav>
     </div>
   );
 };

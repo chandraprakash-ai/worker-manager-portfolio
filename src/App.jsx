@@ -179,7 +179,9 @@ function App() {
     sampleImage: null,
     stages: [],
     processes: [],
-    numColors: 1
+    numColors: 1,
+    avg: '',
+    rate: ''
   });
 
   // --- EFFECTS ---
@@ -405,7 +407,9 @@ function App() {
         sampleImage: null,
         stages: [],
         processes: [],
-        numColors: 1
+        numColors: 1,
+        avg: '',
+        rate: ''
       });
       
       closeSheet();
@@ -477,20 +481,18 @@ function App() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#FAFAFA] pb-44 font-sans no-print text-[#111111]">
+      <div className="min-h-screen bg-[#FAFAFA] pb-24 font-sans no-print text-[#111111]">
         <main className="px-6 py-8 max-w-7xl mx-auto overflow-x-hidden">
           <Suspense fallback={<LoadingFallback />}>
-            <AnimatePresence mode="wait">
-            {/* Main Tab Stack (Persistent) */}
-            {!selectedWorkerId && !isInventoryPage && (
-              <motion.div
-                key="main-tabs"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {isHomePage && (
+            <AnimatePresence mode="popLayout">
+              {isHomePage && (
+                <motion.div
+                  key="home"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <HomeDashboard 
                     navigate={navigate} 
                     workers={workers} 
@@ -499,9 +501,17 @@ function App() {
                     transactions={transactions}
                     onOpenSheet={openSheet}
                   />
-                )}
+                </motion.div>
+              )}
 
-                {isWorkersPage && !activeWorker && (
+              {isWorkersPage && !activeWorker && (
+                <motion.div
+                  key="workers"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <WorkerDirectory 
                     search={search} 
                     setSearch={setSearch} 
@@ -509,9 +519,17 @@ function App() {
                     onOpenSheet={openSheet} 
                     onNavigate={navigate} 
                   />
-                )}
+                </motion.div>
+              )}
 
-                {isLotPage && !selectedLotId && (
+              {isLotPage && !selectedLotId && (
+                <motion.div
+                  key="lots"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <LotDashboard 
                     search={search} 
                     setSearch={setSearch} 
@@ -519,9 +537,17 @@ function App() {
                     onNavigate={navigate} 
                     onOpenSheet={openSheet} 
                   />
-                )}
+                </motion.div>
+              )}
 
-                {isSystemOpen && (
+              {isSystemOpen && (
+                <motion.div
+                  key="system"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <BackupModal 
                     onLogout={logout}
                     allData={{
@@ -532,51 +558,51 @@ function App() {
                       settlements: allSettlements
                     }}
                   />
-                )}
-              </motion.div>
-            )}
+                </motion.div>
+              )}
 
-            {/* Detail Views (Slide In from Right) */}
-            {activeWorker && (
-              <motion.div
-                key={`worker-${activeWorker.id}`}
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed inset-0 z-[80] bg-[#FAFAFA] overflow-y-auto px-6 py-8 pb-44"
-              >
-                <WorkerDetail 
-                  activeWorker={activeWorker} 
-                  transactions={activeTransactions} 
-                  calculateBalance={calculateBalance} 
-                  onNavigate={navigate} 
-                  onOpenSheet={openSheet} 
-                  setEditingTx={setEditingTx} 
-                  setNewTx={setNewTx} 
-                  setNewWorker={setNewWorker}
-                  generateInvoicePDF={generateInvoicePDF} 
-                />
-              </motion.div>
-            )}
+              {/* Detail Views (Slide In from Right) */}
+              {activeWorker && (
+                <motion.div
+                  key={`worker-${activeWorker.id}`}
+                  initial={{ x: '100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '100%' }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                  className="fixed inset-0 z-[110] bg-[#FAFAFA] overflow-y-auto px-6 py-8 pb-44"
+                >
+                  <WorkerDetail 
+                    activeWorker={activeWorker} 
+                    transactions={activeTransactions} 
+                    calculateBalance={calculateBalance} 
+                    onNavigate={navigate} 
+                    onOpenSheet={openSheet} 
+                    setEditingTx={setEditingTx} 
+                    setNewTx={setNewTx} 
+                    setNewWorker={setNewWorker}
+                    generateInvoicePDF={generateInvoicePDF} 
+                  />
+                </motion.div>
+              )}
 
-            {isInventoryPage && (
-              <motion.div
-                key="inventory"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-              >
-                <InventoryDashboard 
-                  search={search} 
-                  setSearch={setSearch} 
-                  allInventory={allInventory} 
-                  onNavigate={navigate} 
-                  onOpenSheet={openSheet} 
-                  setActiveInvItem={setActiveInvItem} 
-                />
-              </motion.div>
-            )}
+              {isInventoryPage && (
+                <motion.div
+                  key="inventory"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <InventoryDashboard 
+                    search={search} 
+                    setSearch={setSearch} 
+                    allInventory={allInventory} 
+                    onNavigate={navigate} 
+                    onOpenSheet={openSheet} 
+                    setActiveInvItem={setActiveInvItem} 
+                  />
+                </motion.div>
+              )}
           </AnimatePresence>
          </Suspense>
         </main>
@@ -653,7 +679,7 @@ function App() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => openSheet('/add-worker')} 
-            className="fixed bottom-32 right-6 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center active:scale-95 transition-all border-2 border-[#D4AF37]/20"
+            className="fixed bottom-20 right-6 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center active:scale-95 transition-all border-2 border-[#D4AF37]/20"
           >
             <Plus size={32} strokeWidth={3} />
           </motion.button>
@@ -665,7 +691,7 @@ function App() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => openSheet('/lot/add')} 
-            className="fixed bottom-32 right-6 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-premium flex items-center justify-center active:scale-95 hover:scale-105 transition-all border-2 border-[#D4AF37]/20 group"
+            className="fixed bottom-20 right-6 z-[60] bg-[#111111] text-[#D4AF37] w-16 h-16 rounded-2xl shadow-premium flex items-center justify-center active:scale-95 hover:scale-105 transition-all border-2 border-[#D4AF37]/20 group"
           >
             <Plus size={32} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-500" />
           </motion.button>

@@ -19,7 +19,7 @@ export const LotInitializationSheet = ({
   const isHindi = i18n?.language === 'hi';
   const designInputRef = useRef(null);
   const sampleInputRef = useRef(null);
-  const allAvailableSizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+  const allAvailableSizes = ['36', '38', '40', '42', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
   const activeSizes = Object.keys(newLot.sizes);
 
   const toggleSize = (size) => {
@@ -159,20 +159,50 @@ export const LotInitializationSheet = ({
              </div>
           </div>
 
-          <div className="space-y-4">
-             <label className={`block font-black text-[#111111]/30 uppercase ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.colors', 'Colors')}</label>
-             <input 
-               type="number" 
-               required 
-               min="1"
-               value={newLot.numColors ?? ''} 
-               onChange={(e) => {
-                 const val = e.target.value;
-                 setNewLot({ ...newLot, numColors: val === '' ? '' : Number(val) });
-               }} 
-               className="w-32 bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl text-center" 
-               placeholder="1" 
-             />
+          <div className="grid grid-cols-3 gap-4">
+             <div className="space-y-4">
+                <label className={`block font-black text-[#111111]/30 uppercase ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.colors', 'Colors')}</label>
+                <input 
+                  type="number" 
+                  required 
+                  min="1"
+                  value={newLot.numColors ?? ''} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewLot({ ...newLot, numColors: val === '' ? '' : Number(val) });
+                  }} 
+                  className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl text-center" 
+                  placeholder="1" 
+                />
+             </div>
+             <div className="space-y-4">
+                <label className={`block font-black text-[#111111]/30 uppercase ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.average', 'Average')}</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  value={newLot.avg ?? ''} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewLot({ ...newLot, avg: val === '' ? '' : Number(val) });
+                  }} 
+                  className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl text-center" 
+                  placeholder="0.00" 
+                />
+             </div>
+             <div className="space-y-4">
+                <label className={`block font-black text-[#111111]/30 uppercase ml-1 ${isHindi ? 'text-xs tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.rate', 'Rate')}</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  value={newLot.rate ?? ''} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewLot({ ...newLot, rate: val === '' ? '' : Number(val) });
+                  }} 
+                  className="w-full bg-[#F5F5F5] border-none rounded-2xl p-5 outline-none font-bold text-xl text-center" 
+                  placeholder="0.00" 
+                />
+             </div>
           </div>
 
           <div className="space-y-4">
@@ -239,18 +269,30 @@ export const LotInitializationSheet = ({
             )}
           </div>
 
-          <div className="bg-[#111111] text-[#D4AF37] p-6 rounded-[2rem] shadow-premium">
-            <div className="flex justify-between items-center">
+          <div className="bg-[#111111] text-[#D4AF37] p-6 rounded-[2rem] shadow-premium relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
               <div>
-                <p className={`font-black uppercase opacity-40 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[10px] tracking-widest'}`}>{t('lots.planned_production')}</p>
-                <h4 className="text-3xl font-display font-bold">{totalPcs} {t('lots.pcs')}</h4>
+                <p className={`font-black uppercase opacity-40 mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.planned_production')}</p>
+                <h4 className="text-3xl font-display font-bold text-white">{totalPcs} <span className="text-xs uppercase text-white/40">{t('lots.pcs')}</span></h4>
                 {numColors > 1 && (
-                  <p className="text-white/40 text-[10px] font-black uppercase mt-1 tracking-widest">
-                    {numColors} {t('lots.colors', 'COLORS')} × {basePcs} {t('lots.pcs', 'PCS')}
+                  <p className="text-white/40 text-[9px] font-black uppercase mt-0.5 tracking-wider">
+                    {numColors} {t('lots.colors')} × {basePcs} {t('lots.pcs')}
                   </p>
                 )}
               </div>
-              <Tag size={24} />
+              <div>
+                <p className={`font-black uppercase opacity-40 mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.colors')}</p>
+                <h4 className="text-3xl font-display font-bold text-white">{numColors}</h4>
+              </div>
+              <div>
+                <p className={`font-black uppercase opacity-40 mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.average')}</p>
+                <h4 className="text-3xl font-display font-bold text-white">{newLot.avg || '-'}</h4>
+              </div>
+              <div>
+                <p className={`font-black uppercase opacity-40 mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.rate')}</p>
+                <h4 className="text-3xl font-display font-bold text-white">{newLot.rate ? `₹${newLot.rate}` : '-'}</h4>
+              </div>
             </div>
           </div>
 

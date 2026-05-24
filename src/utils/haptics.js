@@ -2,8 +2,11 @@ export const haptic = (type = 'light') => {
   if (!window.navigator || !window.navigator.vibrate) return;
   
   switch (type) {
+    case 'soft':
+      window.navigator.vibrate(8);
+      break;
     case 'light':
-      window.navigator.vibrate(20);
+      window.navigator.vibrate(12);
       break;
     case 'medium':
       window.navigator.vibrate(50);
