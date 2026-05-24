@@ -269,32 +269,6 @@ export const LotInitializationSheet = ({
             )}
           </div>
 
-          <div className="bg-[#111111] text-[#D4AF37] p-6 rounded-[2rem] shadow-premium relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
-              <div>
-                <p className={`font-black uppercase opacity-40 mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.planned_production')}</p>
-                <h4 className="text-3xl font-display font-bold text-white">{totalPcs} <span className="text-xs uppercase text-white/40">{t('lots.pcs')}</span></h4>
-                {numColors > 1 && (
-                  <p className="text-white/40 text-[9px] font-black uppercase mt-0.5 tracking-wider">
-                    {numColors} {t('lots.colors')} × {basePcs} {t('lots.pcs')}
-                  </p>
-                )}
-              </div>
-              <div>
-                <p className={`font-black uppercase opacity-40 mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.colors')}</p>
-                <h4 className="text-3xl font-display font-bold text-white">{numColors}</h4>
-              </div>
-              <div>
-                <p className={`font-black uppercase opacity-40 mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.average')}</p>
-                <h4 className="text-3xl font-display font-bold text-white">{newLot.avg || '-'}</h4>
-              </div>
-              <div>
-                <p className={`font-black uppercase opacity-40 mb-1 ${isHindi ? 'text-[11px] tracking-normal' : 'text-[9px] tracking-widest'}`}>{t('lots.rate')}</p>
-                <h4 className="text-3xl font-display font-bold text-white">{newLot.rate ? `₹${newLot.rate}` : '-'}</h4>
-              </div>
-            </div>
-          </div>
 
           {localError && (
             <p className="text-center text-xs font-black text-red-500 uppercase tracking-widest animate-pulse">{localError}</p>

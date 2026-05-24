@@ -14,6 +14,21 @@ export const HomeDashboard = ({ workers, lots, transactions, navigate }) => {
   const ks4uLots = (lots || []).filter(l => l.brand === 'KS4U');
   const rktLots = (lots || []).filter(l => l.brand === 'RKT');
 
+  // New Analytics Calculations
+  const clearedLotsCount = (lots || []).filter(l => l.status === 'cleared').length;
+
+  const activeLotsPieces = activeLots.reduce((sum, lot) => {
+    const basePcs = Object.values(lot.sizes || {}).reduce((s, q) => s + (Number(q) || 0), 0);
+    const numColors = Number(lot.numColors) || 1;
+    return sum + (basePcs * numColors);
+  }, 0);
+
+  const avgActiveLotSize = activeLots.length > 0 
+    ? Math.round(activeLotsPieces / activeLots.length) 
+    : 0;
+
+  const activeColorsCount = activeLots.reduce((sum, lot) => sum + (Number(lot.numColors) || 1), 0);
+
   // Get current (most recent) active lot
   const currentLot = [...activeLots].sort((a, b) => {
     const dateA = a.date?.seconds || 0;
@@ -89,17 +104,17 @@ export const HomeDashboard = ({ workers, lots, transactions, navigate }) => {
       )}
 
       {/* Analytics Grid */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Unified Brand Stats Card */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-500">
+        {/* Card 1: Unified Brand Stats Card */}
         <motion.div 
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white p-8 rounded-[3rem] border border-surface-100 shadow-premium"
+          className="bg-white p-8 rounded-[3rem] border border-surface-100 shadow-premium md:col-span-2"
         >
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
-               <ClipboardList size={20} />
+                <ClipboardList size={20} />
             </div>
             <span className={`font-black uppercase tracking-[0.2em] text-[#111111]/30 ${i18n.language === 'hi' ? 'text-[13px] tracking-normal' : 'text-[10px]'}`}>{t('dashboard.production_volume')}</span>
           </div>
@@ -109,24 +124,72 @@ export const HomeDashboard = ({ workers, lots, transactions, navigate }) => {
              <div className="absolute top-2 bottom-2 left-1/2 w-px bg-[#111111]/5" />
 
              <div>
-                <p className={`font-black uppercase text-[#111111]/20 tracking-widest mb-2 ${i18n.language === 'hi' ? 'text-[11px] tracking-normal' : 'text-[9px]'}`}>KS4U Brand</p>
-                <div className="flex items-end gap-2">
-                   <h4 className="text-4xl font-display font-black text-[#111111] leading-none">{ks4uLots.length}</h4>
-                   <span className="text-[10px] font-bold text-amber-600 mb-1">{ks4uLots.filter(l => l.status === 'active').length} {t('dashboard.active')}</span>
-                </div>
+                 <p className={`font-black uppercase text-[#111111]/20 tracking-widest mb-2 ${i18n.language === 'hi' ? 'text-[11px] tracking-normal' : 'text-[9px]'}`}>KS4U Brand</p>
+                 <div className="flex items-end gap-2">
+                    <h4 className="text-4xl font-display font-black text-[#111111] leading-none">{ks4uLots.length}</h4>
+                    <span className="text-[10px] font-bold text-amber-600 mb-1">{ks4uLots.filter(l => l.status === 'active').length} {t('dashboard.active')}</span>
+                 </div>
              </div>
 
              <div className="pl-4">
-                <p className={`font-black uppercase text-[#111111]/20 tracking-widest mb-2 ${i18n.language === 'hi' ? 'text-[11px] tracking-normal' : 'text-[9px]'}`}>RKT Brand</p>
-                <div className="flex items-end gap-2">
-                   <h4 className="text-4xl font-display font-black text-[#111111] leading-none">{rktLots.length}</h4>
-                   <span className="text-[10px] font-bold text-green-600 mb-1">{rktLots.filter(l => l.status === 'active').length} {t('dashboard.active')}</span>
-                </div>
+                 <p className={`font-black uppercase text-[#111111]/20 tracking-widest mb-2 ${i18n.language === 'hi' ? 'text-[11px] tracking-normal' : 'text-[9px]'}`}>RKT Brand</p>
+                 <div className="flex items-end gap-2">
+                    <h4 className="text-4xl font-display font-black text-[#111111] leading-none">{rktLots.length}</h4>
+                    <span className="text-[10px] font-bold text-green-600 mb-1">{rktLots.filter(l => l.status === 'active').length} {t('dashboard.active')}</span>
+                 </div>
              </div>
           </div>
         </motion.div>
 
+        {/* Card 2: Pieces in Pipeline */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-white p-8 rounded-[3rem] border border-surface-100 shadow-premium flex flex-col justify-between"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+                <TrendingUp size={20} />
+            </div>
+            <span className={`font-black uppercase tracking-[0.2em] text-[#111111]/30 ${i18n.language === 'hi' ? 'text-[13px] tracking-normal' : 'text-[10px]'}`}>
+              {t('dashboard.total_pieces', 'Pieces in Pipeline')}
+            </span>
+          </div>
+          <div className="space-y-1 mt-auto">
+            <h4 className="text-4xl font-display font-black text-[#111111] tracking-tight">
+              {activeLotsPieces.toLocaleString()}
+            </h4>
+            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
+              {t('dashboard.across_lots', 'Across active production cycles')}
+            </p>
+          </div>
+        </motion.div>
 
+        {/* Card 4: Finished Pipeline */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="bg-white p-8 rounded-[3rem] border border-surface-100 shadow-premium flex flex-col justify-between"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+                <ClipboardList size={20} />
+            </div>
+            <span className={`font-black uppercase tracking-[0.2em] text-[#111111]/30 ${i18n.language === 'hi' ? 'text-[13px] tracking-normal' : 'text-[10px]'}`}>
+              {t('dashboard.completed_lots', 'Completed Pipeline')}
+            </span>
+          </div>
+          <div className="space-y-1 mt-auto">
+            <h4 className="text-4xl font-display font-black text-emerald-600 tracking-tight">
+              {clearedLotsCount}
+            </h4>
+            <p className="text-[10px] font-bold text-[#111111]/40 uppercase tracking-widest">
+              {t('dashboard.lots_finished', 'Finished Lots Archived')}
+            </p>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

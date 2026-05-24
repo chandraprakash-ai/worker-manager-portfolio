@@ -14,7 +14,14 @@
     "total_production": "Total Production",
     "brand_stats": "Brand Statistics",
     "workforce": "Workforce Overview",
-    "quick_access": "Quick Access"
+    "quick_access": "Quick Access",
+    "total_pieces": "Pieces in Pipeline",
+    "across_lots": "Across active production cycles",
+    "average_run": "Average Batch Run",
+    "avg_size": "Avg Size",
+    "active_colors": "Active Colors",
+    "completed_lots": "Completed Pipeline",
+    "lots_finished": "Finished Lots Archived"
   },
   "common": {
     "home": "Home",
