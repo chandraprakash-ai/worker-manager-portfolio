@@ -332,7 +332,7 @@ export const LotDashboard = ({
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-black uppercase tracking-widest text-[#111111]">
-                  Filters & Sorting
+                  {t('lots.filters_title', 'Filters & Sorting')}
                 </h3>
                 <button
                   onClick={handleCloseFilter}
@@ -346,13 +346,13 @@ export const LotDashboard = ({
               <div className="space-y-5">
                 {/* Time Range Selector */}
                 <div className="space-y-2.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#111111]/30">Filter by Time</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#111111]/30">{t('lots.filter_by_time', 'Filter by Time')}</span>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: 'all', label: 'All Time' },
-                      { id: 'today', label: 'Today' },
-                      { id: 'week', label: 'This Week' },
-                      { id: 'month', label: 'This Month' }
+                      { id: 'all', label: t('lots.time_all', 'All Time') },
+                      { id: 'today', label: t('lots.time_today', 'Today') },
+                      { id: 'week', label: t('lots.time_week', 'This Week') },
+                      { id: 'month', label: t('lots.time_month', 'This Month') }
                     ].map(option => (
                       <div
                         key={option.id}
@@ -375,10 +375,10 @@ export const LotDashboard = ({
 
                 {/* Custom Date Range Picker */}
                 <div className="space-y-2.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#111111]/30">Or Custom Date Range</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#111111]/30">{t('lots.custom_range', 'Or Custom Date Range')}</span>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-[8px] font-black uppercase tracking-widest text-[#111111]/30">From</span>
+                      <span className="absolute left-3 top-2 text-[8px] font-black uppercase tracking-widest text-[#111111]/30">{t('lots.date_from', 'From')}</span>
                       <input
                         type="date"
                         value={customFrom}
@@ -390,7 +390,7 @@ export const LotDashboard = ({
                       />
                     </div>
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-[8px] font-black uppercase tracking-widest text-[#111111]/30">To</span>
+                      <span className="absolute left-3 top-2 text-[8px] font-black uppercase tracking-widest text-[#111111]/30">{t('lots.date_to', 'To')}</span>
                       <input
                         type="date"
                         value={customTo}
@@ -406,13 +406,13 @@ export const LotDashboard = ({
 
                 {/* Sorting Options Selector */}
                 <div className="space-y-2.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#111111]/30">Sort Order</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#111111]/30">{t('lots.sort_order', 'Sort Order')}</span>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: 'newest', label: 'Newest First' },
-                      { id: 'oldest', label: 'Oldest First' },
-                      { id: 'num-desc', label: 'Lot No: High to Low' },
-                      { id: 'num-asc', label: 'Lot No: Low to High' }
+                      { id: 'newest', label: t('lots.sort_newest', 'Newest First') },
+                      { id: 'oldest', label: t('lots.sort_oldest', 'Oldest First') },
+                      { id: 'num-desc', label: t('lots.sort_num_desc', 'Lot No: High to Low') },
+                      { id: 'num-asc', label: t('lots.sort_num_asc', 'Lot No: Low to High') }
                     ].map(option => (
                       <div
                         key={option.id}
@@ -440,13 +440,13 @@ export const LotDashboard = ({
                   }}
                   className="flex-1 py-3 bg-[#F5F5F5] hover:bg-[#E5E5E5] text-[#111111] rounded-2xl text-[10px] font-black uppercase tracking-widest transition-colors"
                 >
-                  Reset
+                  {t('common.reset', 'Reset')}
                 </button>
                 <button
                   onClick={handleCloseFilter}
                   className="flex-1 py-3 bg-[#111111] hover:bg-[#222222] text-[#D4AF37] rounded-2xl text-[10px] font-black uppercase tracking-widest transition-colors"
                 >
-                  Apply
+                  {t('common.apply', 'Apply')}
                 </button>
               </div>
             </motion.div>

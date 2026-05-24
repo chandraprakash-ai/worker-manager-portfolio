@@ -36,7 +36,9 @@
     "date": "तारीख",
     "notes": "नोट्स",
     "all": "सभी",
-    "cleared": "क्लियर किया हुआ"
+    "cleared": "क्लियर किया हुआ",
+    "reset": "रीसेट",
+    "apply": "लागू करें"
   },
   "workers": {
     "add_worker": "नया कर्मचारी जोड़ें",
@@ -160,7 +162,21 @@
     "rate": "दर",
     "cleared_lots": "क्लियर लॉट",
     "clear_lot": "लॉट क्लियर / समाप्त करें",
-    "activate_lot": "लॉट सक्रिय करें"
+    "activate_lot": "लॉट सक्रिय करें",
+    "filters_title": "फ़िल्टर और सॉर्टिंग",
+    "filter_by_time": "समय के अनुसार फ़िल्टर करें",
+    "time_all": "कुल समय",
+    "time_today": "आज",
+    "time_week": "इस सप्ताह",
+    "time_month": "इस महीने",
+    "custom_range": "या कस्टम तिथि सीमा",
+    "date_from": "से",
+    "date_to": "तक",
+    "sort_order": "सॉर्ट ऑर्डर",
+    "sort_newest": "नवीनतम पहले",
+    "sort_oldest": "सबसे पुराना पहले",
+    "sort_num_desc": "लॉट संख्या: अधिक से कम",
+    "sort_num_asc": "लॉट संख्या: कम से अधिक"
   },
   "stages": {
     "cutting": "कटिंग",

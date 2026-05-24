@@ -36,7 +36,9 @@
     "date": "Date",
     "notes": "Notes",
     "all": "All",
-    "cleared": "Cleared"
+    "cleared": "Cleared",
+    "reset": "Reset",
+    "apply": "Apply"
   },
   "workers": {
     "add_worker": "Add New Worker",
@@ -160,7 +162,21 @@
     "rate": "Rate",
     "cleared_lots": "Cleared Lots",
     "clear_lot": "Clear / Finish Lot",
-    "activate_lot": "Activate Lot"
+    "activate_lot": "Activate Lot",
+    "filters_title": "Filters & Sorting",
+    "filter_by_time": "Filter by Time",
+    "time_all": "All Time",
+    "time_today": "Today",
+    "time_week": "This Week",
+    "time_month": "This Month",
+    "custom_range": "Or Custom Date Range",
+    "date_from": "From",
+    "date_to": "To",
+    "sort_order": "Sort Order",
+    "sort_newest": "Newest First",
+    "sort_oldest": "Oldest First",
+    "sort_num_desc": "Lot No: High to Low",
+    "sort_num_asc": "Lot No: Low to High"
   },
   "stages": {
     "cutting": "Cutting",
