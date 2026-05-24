@@ -125,17 +125,27 @@ export const HomeDashboard = ({ workers, lots, transactions, navigate }) => {
 
              <div>
                  <p className={`font-black uppercase text-[#111111]/20 tracking-widest mb-2 ${i18n.language === 'hi' ? 'text-[11px] tracking-normal' : 'text-[9px]'}`}>KS4U Brand</p>
-                 <div className="flex items-end gap-2">
+                 <div className="flex items-end gap-2 mb-2">
                     <h4 className="text-4xl font-display font-black text-[#111111] leading-none">{ks4uLots.length}</h4>
-                    <span className="text-[10px] font-bold text-amber-600 mb-1">{ks4uLots.filter(l => l.status === 'active').length} {t('dashboard.active')}</span>
+                    <span className="text-[9px] font-bold text-[#111111]/30 uppercase tracking-wider mb-0.5">Total</span>
+                 </div>
+                 <div className="flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase tracking-wider">
+                    <span className="text-amber-600">{ks4uLots.filter(l => l.status === 'active').length} {t('dashboard.active')}</span>
+                    <span className="text-[#111111]/10">|</span>
+                    <span className="text-gray-400">{ks4uLots.filter(l => l.status === 'cleared').length} {t('common.cleared')}</span>
                  </div>
              </div>
 
              <div className="pl-4">
                  <p className={`font-black uppercase text-[#111111]/20 tracking-widest mb-2 ${i18n.language === 'hi' ? 'text-[11px] tracking-normal' : 'text-[9px]'}`}>RKT Brand</p>
-                 <div className="flex items-end gap-2">
+                 <div className="flex items-end gap-2 mb-2">
                     <h4 className="text-4xl font-display font-black text-[#111111] leading-none">{rktLots.length}</h4>
-                    <span className="text-[10px] font-bold text-green-600 mb-1">{rktLots.filter(l => l.status === 'active').length} {t('dashboard.active')}</span>
+                    <span className="text-[9px] font-bold text-[#111111]/30 uppercase tracking-wider mb-0.5">Total</span>
+                 </div>
+                 <div className="flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase tracking-wider">
+                    <span className="text-green-600">{rktLots.filter(l => l.status === 'active').length} {t('dashboard.active')}</span>
+                    <span className="text-[#111111]/10">|</span>
+                    <span className="text-gray-400">{rktLots.filter(l => l.status === 'cleared').length} {t('common.cleared')}</span>
                  </div>
              </div>
           </div>
