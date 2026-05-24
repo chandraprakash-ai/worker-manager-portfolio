@@ -21,7 +21,9 @@
     "avg_size": "औसत साइज",
     "active_colors": "सक्रिय रंग",
     "completed_lots": "पूरा हो चुका काम",
-    "lots_finished": "सफलतापूर्वक समाप्त लॉट्स"
+    "lots_finished": "सफलतापूर्वक समाप्त लॉट्स",
+    "metric": "पैमाना",
+    "total": "कुल"
   },
   "common": {
     "home": "होम",

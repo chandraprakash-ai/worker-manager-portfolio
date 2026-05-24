@@ -21,7 +21,9 @@
     "avg_size": "Avg Size",
     "active_colors": "Active Colors",
     "completed_lots": "Completed Pipeline",
-    "lots_finished": "Finished Lots Archived"
+    "lots_finished": "Finished Lots Archived",
+    "metric": "Metric",
+    "total": "Total"
   },
   "common": {
     "home": "Home",

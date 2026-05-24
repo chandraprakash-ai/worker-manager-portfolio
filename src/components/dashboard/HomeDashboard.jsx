@@ -119,34 +119,33 @@ export const HomeDashboard = ({ workers, lots, transactions, navigate }) => {
             <span className={`font-black uppercase tracking-[0.2em] text-[#111111]/30 ${i18n.language === 'hi' ? 'text-[13px] tracking-normal' : 'text-[10px]'}`}>{t('dashboard.production_volume')}</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 relative">
-             {/* Divider */}
-             <div className="absolute top-2 bottom-2 left-1/2 w-px bg-[#111111]/5" />
-
-             <div>
-                 <p className={`font-black uppercase text-[#111111]/20 tracking-widest mb-2 ${i18n.language === 'hi' ? 'text-[11px] tracking-normal' : 'text-[9px]'}`}>KS4U Brand</p>
-                 <div className="flex items-end gap-2 mb-2">
-                    <h4 className="text-4xl font-display font-black text-[#111111] leading-none">{ks4uLots.length}</h4>
-                    <span className="text-[9px] font-bold text-[#111111]/30 uppercase tracking-wider mb-0.5">Total</span>
-                 </div>
-                 <div className="flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase tracking-wider">
-                    <span className="text-amber-600">{ks4uLots.filter(l => l.status === 'active').length} {t('dashboard.active')}</span>
-                    <span className="text-[#111111]/10">|</span>
-                    <span className="text-gray-400">{ks4uLots.filter(l => l.status === 'cleared').length} {t('common.cleared')}</span>
-                 </div>
+          <div className="space-y-4">
+             {/* Header Row */}
+             <div className="grid grid-cols-3 text-right text-[10px] font-black uppercase tracking-widest text-[#111111]/30 pb-2.5 border-b border-[#111111]/5">
+                <div className="text-left">{t('dashboard.metric', 'Metric')}</div>
+                <div>KS4U Brand</div>
+                <div>RKT Brand</div>
              </div>
 
-             <div className="pl-4">
-                 <p className={`font-black uppercase text-[#111111]/20 tracking-widest mb-2 ${i18n.language === 'hi' ? 'text-[11px] tracking-normal' : 'text-[9px]'}`}>RKT Brand</p>
-                 <div className="flex items-end gap-2 mb-2">
-                    <h4 className="text-4xl font-display font-black text-[#111111] leading-none">{rktLots.length}</h4>
-                    <span className="text-[9px] font-bold text-[#111111]/30 uppercase tracking-wider mb-0.5">Total</span>
-                 </div>
-                 <div className="flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase tracking-wider">
-                    <span className="text-green-600">{rktLots.filter(l => l.status === 'active').length} {t('dashboard.active')}</span>
-                    <span className="text-[#111111]/10">|</span>
-                    <span className="text-gray-400">{rktLots.filter(l => l.status === 'cleared').length} {t('common.cleared')}</span>
-                 </div>
+             {/* Total Row */}
+             <div className="grid grid-cols-3 items-center text-right py-2.5 border-b border-[#111111]/5">
+                <div className="text-left text-[10px] font-black uppercase tracking-widest text-[#111111]/40">{t('dashboard.total', 'Total')}</div>
+                <div className="text-2xl font-display font-black text-[#111111]">{ks4uLots.length}</div>
+                <div className="text-2xl font-display font-black text-[#111111]">{rktLots.length}</div>
+             </div>
+
+             {/* Active Row */}
+             <div className="grid grid-cols-3 items-center text-right py-2.5 border-b border-[#111111]/5">
+                <div className="text-left text-[10px] font-black uppercase tracking-widest text-amber-600">{t('dashboard.active', 'Active')}</div>
+                <div className="text-2xl font-display font-black text-amber-600">{ks4uLots.filter(l => l.status === 'active').length}</div>
+                <div className="text-2xl font-display font-black text-green-600">{rktLots.filter(l => l.status === 'active').length}</div>
+             </div>
+
+             {/* Cleared Row */}
+             <div className="grid grid-cols-3 items-center text-right py-2.5">
+                <div className="text-left text-[10px] font-black uppercase tracking-widest text-gray-400">{t('common.cleared', 'Cleared')}</div>
+                <div className="text-2xl font-display font-black text-gray-400">{ks4uLots.filter(l => l.status === 'cleared').length}</div>
+                <div className="text-2xl font-display font-black text-gray-400">{rktLots.filter(l => l.status === 'cleared').length}</div>
              </div>
           </div>
         </motion.div>
