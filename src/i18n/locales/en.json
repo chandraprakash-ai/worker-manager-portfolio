@@ -205,6 +205,6 @@
     "cloud_snapshot": "Cloud Snapshot",
     "auto_sync_active": "24h Automated Sync: Active",
     "language": "Language Settings",
-    "logout": "Securely Log Out"
+    "logout": "Reset Demo Database"
   }
 }

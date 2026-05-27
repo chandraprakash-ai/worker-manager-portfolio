@@ -1,16 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { auth } from '../lib/firebase';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  updateProfile,
-  signOut, 
-  sendPasswordResetEmail,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup
-} from 'firebase/auth';
 
 const formatEmail = (username) => {
   if (!username) return '';
@@ -18,145 +7,167 @@ const formatEmail = (username) => {
   return `${username.trim().toLowerCase()}@amrut.com`;
 };
 
+const getUsers = () => {
+  try {
+    const users = localStorage.getItem('amrut_users');
+    if (!users) {
+      const defaultUsers = [
+        {
+          uid: 'demo-manager-id',
+          username: 'admin',
+          pin: '123456',
+          displayName: 'Demo Manager'
+        }
+      ];
+      localStorage.setItem('amrut_users', JSON.stringify(defaultUsers));
+      return defaultUsers;
+    }
+    return JSON.parse(users);
+  } catch (e) {
+    console.error("Failed to parse users from localStorage", e);
+    return [];
+  }
+};
+
 export const useAuthStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isLoading: true,
       error: null,
 
       login: async (username, pin) => {
         set({ isLoading: true, error: null });
+        // Add artificial latency for premium native feels
+        await new Promise(resolve => setTimeout(resolve, 800));
+
         try {
           const email = formatEmail(username);
+          const cleanUsername = username.trim().toLowerCase().split('@')[0];
           const formattedPin = pin.length < 6 ? pin.padEnd(6, '0') : pin;
-          
-          const userCredential = await signInWithEmailAndPassword(auth, email, formattedPin);
-          const firebaseUser = userCredential.user;
-          
+
+          const users = getUsers();
+          const foundUser = users.find(u => u.username === cleanUsername);
+
+          if (!foundUser || foundUser.pin !== formattedPin) {
+            throw new Error('Invalid Manager ID or Security PIN.');
+          }
+
           const userData = { 
-            uid: firebaseUser.uid, 
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName || username
+            uid: foundUser.uid, 
+            email: email,
+            displayName: foundUser.displayName || username
           };
           
           set({ user: userData, isLoading: false });
           return true;
         } catch (error) {
-          let readableError = error.message;
-          if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-            readableError = 'Invalid Manager ID or Security PIN.';
-          } else if (error.code === 'auth/invalid-email') {
-            readableError = 'Invalid Manager ID format.';
-          }
-          set({ error: readableError, isLoading: false });
+          set({ error: error.message, isLoading: false });
           return false;
         }
       },
 
       loginWithGoogle: async () => {
         set({ isLoading: true, error: null });
+        await new Promise(resolve => setTimeout(resolve, 600));
         try {
-          const provider = new GoogleAuthProvider();
-          const userCredential = await signInWithPopup(auth, provider);
-          const firebaseUser = userCredential.user;
-          
-          const userData = { 
-            uid: firebaseUser.uid, 
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0]
+          const googleUser = { 
+            uid: 'google-demo-user', 
+            email: 'google.demo@amrut.com',
+            displayName: 'Google Demo User'
           };
           
-          set({ user: userData, isLoading: false });
+          const users = getUsers();
+          if (!users.some(u => u.uid === googleUser.uid)) {
+            users.push({
+              uid: googleUser.uid,
+              username: 'google.demo',
+              pin: '000000',
+              displayName: googleUser.displayName
+            });
+            localStorage.setItem('amrut_users', JSON.stringify(users));
+          }
+
+          set({ user: googleUser, isLoading: false });
           return true;
         } catch (error) {
-          let readableError = error.message;
-          if (error.code === 'auth/popup-closed-by-user') {
-            readableError = 'Sign in was cancelled.';
-          } else if (error.code === 'auth/operation-not-allowed') {
-            readableError = 'Google Sign In is not enabled in your Firebase Console.';
-          }
-          set({ error: readableError, isLoading: false });
+          set({ error: error.message, isLoading: false });
           return false;
         }
       },
 
       register: async (username, pin, displayName = '') => {
         set({ isLoading: true, error: null });
+        await new Promise(resolve => setTimeout(resolve, 800));
+
         try {
-          const email = formatEmail(username);
-          // Firebase password must be >= 6 chars
-          const formattedPin = pin.length < 6 ? pin.padEnd(6, '0') : pin;
-          
-          const userCredential = await createUserWithEmailAndPassword(auth, email, formattedPin);
-          const firebaseUser = userCredential.user;
-          
-          if (displayName) {
-            await updateProfile(firebaseUser, { displayName });
+          const cleanUsername = username.trim().toLowerCase().split('@')[0];
+          if (!cleanUsername) {
+            throw new Error('Invalid Manager ID format.');
+          }
+          if (pin.length < 6) {
+            throw new Error('Security PIN is too weak (must be at least 6 digits).');
           }
           
+          const users = getUsers();
+          if (users.some(u => u.username === cleanUsername)) {
+            throw new Error('This Manager ID is already registered.');
+          }
+
+          const newUid = `user-${Date.now()}`;
+          const newUser = {
+            uid: newUid,
+            username: cleanUsername,
+            pin: pin,
+            displayName: displayName || username
+          };
+
+          users.push(newUser);
+          localStorage.setItem('amrut_users', JSON.stringify(users));
+          
           const userData = { 
-            uid: firebaseUser.uid, 
-            email: firebaseUser.email,
+            uid: newUid, 
+            email: formatEmail(cleanUsername),
             displayName: displayName || username
           };
           
           set({ user: userData, isLoading: false });
           return true;
         } catch (error) {
-          let readableError = error.message;
-          if (error.code === 'auth/email-already-in-use') {
-            readableError = 'This Manager ID is already registered.';
-          } else if (error.code === 'auth/weak-password') {
-            readableError = 'Security PIN is too weak (must be at least 6 digits).';
-          } else if (error.code === 'auth/invalid-email') {
-            readableError = 'Invalid Manager ID format.';
-          }
-          set({ error: readableError, isLoading: false });
+          set({ error: error.message, isLoading: false });
           return false;
         }
       },
 
       logout: async () => {
         set({ isLoading: true });
-        try {
-          await signOut(auth);
-          set({ user: null, isLoading: false });
-        } catch (error) {
-          set({ error: error.message, isLoading: false });
-        }
+        await new Promise(resolve => setTimeout(resolve, 400));
+        set({ user: null, isLoading: false });
       },
 
       resetPassword: async (username) => {
         set({ isLoading: true, error: null });
+        await new Promise(resolve => setTimeout(resolve, 600));
         try {
-          const email = formatEmail(username);
-          await sendPasswordResetEmail(auth, email);
+          const cleanUsername = username.trim().toLowerCase().split('@')[0];
+          const users = getUsers();
+          const exists = users.some(u => u.username === cleanUsername);
+          if (!exists) {
+            throw new Error('No manager found with this ID.');
+          }
           set({ isLoading: false });
           return true;
         } catch (error) {
-          let readableError = error.message;
-          if (error.code === 'auth/user-not-found') {
-            readableError = 'No manager found with this ID.';
-          }
-          set({ error: readableError, isLoading: false });
+          set({ error: error.message, isLoading: false });
           return false;
         }
       },
 
       initializeAuth: () => {
-        return onAuthStateChanged(auth, (firebaseUser) => {
-          if (firebaseUser) {
-            const userData = { 
-              uid: firebaseUser.uid, 
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0]
-            };
-            set({ user: userData, isLoading: false });
-          } else {
-            set({ user: null, isLoading: false });
-          }
-        });
+        // Set loading to false using stored Zustand persist state
+        const currentUser = get().user;
+        set({ user: currentUser, isLoading: false });
+        return () => {}; // dummy unsubscribe
       }
     }),
     {
