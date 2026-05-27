@@ -32,143 +32,169 @@ const getUsers = () => {
 export const useAuthStore = create(
   persist(
     (set, get) => ({
-      user: null,
-      isLoading: true,
-      error: null,
+        user: {
+          uid: 'demo-manager-id',
+          email: 'admin@amrut.com',
+          displayName: 'Demo Manager'
+        },
+        isLoading: false,
+        error: null,
 
-      login: async (username, pin) => {
-        set({ isLoading: true, error: null });
-        // Add artificial latency for premium native feels
-        await new Promise(resolve => setTimeout(resolve, 800));
+        login: async (username, pin) => {
+          set({ isLoading: true, error: null });
+          // Add artificial latency for premium native feels
+          await new Promise(resolve => setTimeout(resolve, 800));
 
-        try {
-          const email = formatEmail(username);
-          const cleanUsername = username.trim().toLowerCase().split('@')[0];
-          const formattedPin = pin.length < 6 ? pin.padEnd(6, '0') : pin;
+          try {
+            const email = formatEmail(username);
+            const cleanUsername = username.trim().toLowerCase().split('@')[0];
+            const formattedPin = pin.length < 6 ? pin.padEnd(6, '0') : pin;
 
-          const users = getUsers();
-          const foundUser = users.find(u => u.username === cleanUsername);
+            const users = getUsers();
+            const foundUser = users.find(u => u.username === cleanUsername);
 
-          if (!foundUser || foundUser.pin !== formattedPin) {
-            throw new Error('Invalid Manager ID or Security PIN.');
+            if (!foundUser || foundUser.pin !== formattedPin) {
+              throw new Error('Invalid Manager ID or Security PIN.');
+            }
+
+            const userData = { 
+              uid: foundUser.uid, 
+              email: email,
+              displayName: foundUser.displayName || username
+            };
+            
+            set({ user: userData, isLoading: false });
+            return true;
+          } catch (error) {
+            set({ error: error.message, isLoading: false });
+            return false;
           }
+        },
 
-          const userData = { 
-            uid: foundUser.uid, 
-            email: email,
-            displayName: foundUser.displayName || username
-          };
-          
-          set({ user: userData, isLoading: false });
-          return true;
-        } catch (error) {
-          set({ error: error.message, isLoading: false });
-          return false;
-        }
-      },
+        loginWithGoogle: async () => {
+          set({ isLoading: true, error: null });
+          await new Promise(resolve => setTimeout(resolve, 600));
+          try {
+            const googleUser = { 
+              uid: 'google-demo-user', 
+              email: 'google.demo@amrut.com',
+              displayName: 'Google Demo User'
+            };
+            
+            const users = getUsers();
+            if (!users.some(u => u.uid === googleUser.uid)) {
+              users.push({
+                uid: googleUser.uid,
+                username: 'google.demo',
+                pin: '000000',
+                displayName: googleUser.displayName
+              });
+              localStorage.setItem('amrut_users', JSON.stringify(users));
+            }
 
-      loginWithGoogle: async () => {
-        set({ isLoading: true, error: null });
-        await new Promise(resolve => setTimeout(resolve, 600));
-        try {
-          const googleUser = { 
-            uid: 'google-demo-user', 
-            email: 'google.demo@amrut.com',
-            displayName: 'Google Demo User'
-          };
-          
-          const users = getUsers();
-          if (!users.some(u => u.uid === googleUser.uid)) {
-            users.push({
-              uid: googleUser.uid,
-              username: 'google.demo',
-              pin: '000000',
-              displayName: googleUser.displayName
-            });
+            set({ user: googleUser, isLoading: false });
+            return true;
+          } catch (error) {
+            set({ error: error.message, isLoading: false });
+            return false;
+          }
+        },
+
+        register: async (username, pin, displayName = '') => {
+          set({ isLoading: true, error: null });
+          await new Promise(resolve => setTimeout(resolve, 800));
+
+          try {
+            const cleanUsername = username.trim().toLowerCase().split('@')[0];
+            if (!cleanUsername) {
+              throw new Error('Invalid Manager ID format.');
+            }
+            if (pin.length < 6) {
+              throw new Error('Security PIN is too weak (must be at least 6 digits).');
+            }
+            
+            const users = getUsers();
+            if (users.some(u => u.username === cleanUsername)) {
+              throw new Error('This Manager ID is already registered.');
+            }
+
+            const newUid = `user-${Date.now()}`;
+            const newUser = {
+              uid: newUid,
+              username: cleanUsername,
+              pin: pin,
+              displayName: displayName || username
+            };
+
+            users.push(newUser);
             localStorage.setItem('amrut_users', JSON.stringify(users));
+            
+            const userData = { 
+              uid: newUid, 
+              email: formatEmail(cleanUsername),
+              displayName: displayName || username
+            };
+            
+            set({ user: userData, isLoading: false });
+            return true;
+          } catch (error) {
+            set({ error: error.message, isLoading: false });
+            return false;
           }
+        },
 
-          set({ user: googleUser, isLoading: false });
-          return true;
-        } catch (error) {
-          set({ error: error.message, isLoading: false });
-          return false;
-        }
-      },
+        logout: async () => {
+          set({ isLoading: true });
+          await new Promise(resolve => setTimeout(resolve, 400));
+          const keysToRemove = [
+            'amrut_workers',
+            'amrut_lots',
+            'amrut_transactions',
+            'amrut_settlements',
+            'amrut_inventory',
+            'amrut_inventory_logs',
+            'amrut_backups',
+            'amrut_seeded'
+          ];
+          keysToRemove.forEach(k => localStorage.removeItem(k));
+          set({ 
+            user: { 
+              uid: 'demo-manager-id', 
+              email: 'admin@amrut.com',
+              displayName: 'Demo Manager'
+            }, 
+            isLoading: false 
+          });
+          window.location.reload();
+        },
 
-      register: async (username, pin, displayName = '') => {
-        set({ isLoading: true, error: null });
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        try {
-          const cleanUsername = username.trim().toLowerCase().split('@')[0];
-          if (!cleanUsername) {
-            throw new Error('Invalid Manager ID format.');
+        resetPassword: async (username) => {
+          set({ isLoading: true, error: null });
+          await new Promise(resolve => setTimeout(resolve, 600));
+          try {
+            const cleanUsername = username.trim().toLowerCase().split('@')[0];
+            const users = getUsers();
+            const exists = users.some(u => u.username === cleanUsername);
+            if (!exists) {
+              throw new Error('No manager found with this ID.');
+            }
+            set({ isLoading: false });
+            return true;
+          } catch (error) {
+            set({ error: error.message, isLoading: false });
+            return false;
           }
-          if (pin.length < 6) {
-            throw new Error('Security PIN is too weak (must be at least 6 digits).');
-          }
-          
-          const users = getUsers();
-          if (users.some(u => u.username === cleanUsername)) {
-            throw new Error('This Manager ID is already registered.');
-          }
+        },
 
-          const newUid = `user-${Date.now()}`;
-          const newUser = {
-            uid: newUid,
-            username: cleanUsername,
-            pin: pin,
-            displayName: displayName || username
+        initializeAuth: () => {
+          const currentUser = get().user || { 
+            uid: 'demo-manager-id', 
+            email: 'admin@amrut.com',
+            displayName: 'Demo Manager'
           };
-
-          users.push(newUser);
-          localStorage.setItem('amrut_users', JSON.stringify(users));
-          
-          const userData = { 
-            uid: newUid, 
-            email: formatEmail(cleanUsername),
-            displayName: displayName || username
-          };
-          
-          set({ user: userData, isLoading: false });
-          return true;
-        } catch (error) {
-          set({ error: error.message, isLoading: false });
-          return false;
+          set({ user: currentUser, isLoading: false });
+          return () => {}; // dummy unsubscribe
         }
-      },
-
-      logout: async () => {
-        set({ isLoading: true });
-        await new Promise(resolve => setTimeout(resolve, 400));
-        set({ user: null, isLoading: false });
-      },
-
-      resetPassword: async (username) => {
-        set({ isLoading: true, error: null });
-        await new Promise(resolve => setTimeout(resolve, 600));
-        try {
-          const cleanUsername = username.trim().toLowerCase().split('@')[0];
-          const users = getUsers();
-          const exists = users.some(u => u.username === cleanUsername);
-          if (!exists) {
-            throw new Error('No manager found with this ID.');
-          }
-          set({ isLoading: false });
-          return true;
-        } catch (error) {
-          set({ error: error.message, isLoading: false });
-          return false;
-        }
-      },
-
-      initializeAuth: () => {
-        // Set loading to false using stored Zustand persist state
-        const currentUser = get().user;
-        set({ user: currentUser, isLoading: false });
-        return () => {}; // dummy unsubscribe
-      }
     }),
     {
       name: 'amrut-auth',

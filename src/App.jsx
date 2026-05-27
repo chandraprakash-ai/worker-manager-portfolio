@@ -16,8 +16,6 @@ import * as fs from './lib/firebaseServices';
 import { 
   Routes, Route, useNavigate, useLocation, useParams, useSearchParams 
 } from 'react-router-dom';
-import { LoginPage } from './components/auth/LoginPage';
-import { Header } from './components/layout/Header';
 import { PullToRefresh } from './components/ui/PullToRefresh';
 import { FloatingNavbar } from './components/layout/FloatingNavbar';
 
@@ -35,7 +33,6 @@ const BackupModal = React.lazy(() => import('./components/modals/BackupModal').t
 function App() {
   // --- AUTH STORE ---
   const user = useAuthStore(state => state.user);
-  const login = useAuthStore(state => state.login);
   const logout = useAuthStore(state => state.logout);
   const authLoading = useAuthStore(state => state.isLoading);
   const initializeAuth = useAuthStore(state => state.initializeAuth);
@@ -119,8 +116,6 @@ function App() {
   const addBulkTransactions = useDataStore(state => state.addBulkTransactions);
 
   // --- LOCAL UI STATE ---
-  const [username, setUsername] = useState('');
-  const [pin, setPin] = useState('');
   const [search, setSearch] = useState('');
   const [viewingSettlement, setViewingSettlement] = useState(null);
   const [editingTx, setEditingTx] = useState(null);
@@ -216,13 +211,7 @@ function App() {
     haptic('light');
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const success = await login(username, pin);
-    if (success) {
-      haptic('medium');
-    } else haptic('error');
-  };
+
 
   const handleAddWorker = (e) => {
     e.preventDefault();
@@ -438,9 +427,7 @@ function App() {
     );
   }
 
-  if (!user) {
-    return <LoginPage />;
-  }
+
 
   if (error) {
     return (
